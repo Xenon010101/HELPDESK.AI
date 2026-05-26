@@ -308,6 +308,8 @@ class ReadinessResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Service singletons
 # ---------------------------------------------------------------------------
+from backend.services.semantic_duplicate_service import SemanticDuplicateService
+
 classifier_service = ClassifierService()
 ner_service = NERService()
 duplicate_service = DuplicateService()
