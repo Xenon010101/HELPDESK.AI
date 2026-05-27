@@ -64,22 +64,31 @@ from backend.services.rag_service import RagService
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
-def get_system_settings(company_id: str) -> dict:
+def get_system_settings(company_id_or_name: str) -> dict:
     defaults = {
         "ai_confidence_threshold": 0.80,
         "duplicate_sensitivity": 0.85,
         "enable_auto_resolve": False
     }
-    if not supabase or not company_id:
+    if not supabase or not company_id_or_name:
         return defaults
     try:
         res = supabase.table("system_settings").select(
             "ai_confidence_threshold, duplicate_sensitivity, enable_auto_resolve"
-        ).eq("company_id", company_id).single().execute()
+        ).eq("company_id", company_id_or_name).single().execute()
         if res.data:
             return {**defaults, **res.data}
-    except Exception as e:
-        print(f"[WARNING] Could not fetch system_settings for company_id={company_id}: {e}")
+    except Exception:
+        try:
+            companies_res = supabase.table("companies").select("id").eq("name", company_id_or_name).maybe_single().execute()
+            if companies_res.data:
+                res = supabase.table("system_settings").select(
+                    "ai_confidence_threshold, duplicate_sensitivity, enable_auto_resolve"
+                ).eq("company_id", companies_res.data["id"]).single().execute()
+                if res.data:
+                    return {**defaults, **res.data}
+        except Exception:
+            pass
     return defaults
 class TicketRequest(BaseModel):
     text: str
@@ -726,6 +735,7 @@ async def analyze_ticket(request_body: TicketRequest, request: Request):
         if local_ocr_text:
             text = f"{text} {local_ocr_text}".strip()
             print(f"[AI] OCR added {len(local_ocr_text)} chars to context.")
+            request_body.text = text
 
     # Initalize Timeline
     return await analyze_only(request_body)

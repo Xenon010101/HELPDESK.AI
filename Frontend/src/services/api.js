@@ -2,7 +2,8 @@ import axios from 'axios';
 import { MOCK_TICKETS } from './mockData';
 import { API_CONFIG } from '../config';
 
-const USE_MOCK = true;
+import { API_CONFIG } from '../config';
+const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 const API_BASE_URL = API_CONFIG.BACKEND_URL;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

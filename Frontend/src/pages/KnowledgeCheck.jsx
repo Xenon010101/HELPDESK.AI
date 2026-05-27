@@ -35,7 +35,7 @@ function KnowledgeCheck() {
             useTicketStore.getState().setAITicket({ ...aiTicket, status: 'duplicate_check' });
         }
 
-        if (!aiTicket.duplicate_ticket && !aiTicket.auto_resolve) navigate('/ticket-tracking');
+        if (!aiTicket.duplicate_ticket?.is_duplicate && !aiTicket.auto_resolve) navigate('/ticket-tracking');
     }, [aiTicket, navigate]);
 
     if (!aiTicket) return null;

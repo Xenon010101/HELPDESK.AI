@@ -51,7 +51,10 @@ class ClassifierServiceV3:
         self.model.load_state_dict(torch.load(os.path.join(MODEL_DIR, "model.pt"), map_location=self.device))
         self.model.eval()
 
-        self.tokenizer = BertTokenizerFast.from_pretrained(MODEL_DIR)
+        try:
+            self.tokenizer = BertTokenizerFast.from_pretrained(MODEL_DIR)
+        except OSError:
+            self.tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
         print("[INFO] Classifier Service V3 (Power Model) Loaded.")
 
     def predict(self, text: str):

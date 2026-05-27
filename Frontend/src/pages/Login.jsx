@@ -7,6 +7,7 @@ import { Eye, EyeOff, BrainCircuit, ArrowRight, Loader2, ArrowLeft } from "lucid
 
 function Login() {
   const [email, setEmail] = useState("");
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -16,6 +17,14 @@ function Login() {
 
   const navigate = useNavigate();
   const { login, signInWithMagicLink, loading, user, profile } = useAuthStore();
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Auto-redirect if already logged in
   useEffect(() => {

@@ -41,6 +41,7 @@ function UserLobby() {
                 (payload) => {
                     const newStatus = payload.new.status;
                     setStatus(newStatus);
+                    useAuthStore.getState().getProfile(useAuthStore.getState().user);
 
                     if (newStatus === 'active') {
                         setIsTransitioning(true);
