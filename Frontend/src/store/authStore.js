@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabaseClient';
 import { API_CONFIG } from '../config';
 import useTicketStore from './ticketStore';
+import { safePersistStorage } from './persistentStorage';
 
 const BACKEND_URL = API_CONFIG.BACKEND_URL;
 
@@ -395,6 +396,7 @@ const useAuthStore = create(
         }),
         {
             name: 'auth-storage',
+            storage: safePersistStorage,
             partialize: (state) => ({
                 // Cache display-only profile fields. Role/status must come from the DB.
                 profile: getProfileCache(state.profile)

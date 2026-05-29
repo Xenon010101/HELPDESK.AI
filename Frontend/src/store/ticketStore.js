@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { safePersistStorage } from './persistentStorage';
 
 const useTicketStore = create(
     persist(
@@ -134,6 +135,7 @@ const useTicketStore = create(
         }),
         {
             name: 'ticket-storage', // unique name for localStorage key
+            storage: safePersistStorage,
         }
     )
 );

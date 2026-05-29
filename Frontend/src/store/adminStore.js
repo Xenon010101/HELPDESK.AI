@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { safePersistStorage } from './persistentStorage';
 
 const useAdminStore = create(
     persist(
@@ -19,6 +20,7 @@ const useAdminStore = create(
         }),
         {
             name: 'admin-storage',
+            storage: safePersistStorage,
         }
     )
 );

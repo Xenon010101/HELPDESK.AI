@@ -13,27 +13,10 @@ import TicketSearchBar from '../../components/shared/TicketSearchBar';
  */
 const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef(null);
-    const searchRef = useRef(null);
     const navigate = useNavigate();
     const { logout, profile: adminProfile } = useAuthStore();
     const initials = adminProfile?.full_name ? adminProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AD';
-
-    const handleSearchKeyDown = (e) => {
-        if (e.key === 'Enter' && searchQuery.trim()) {
-            navigate(`/admin/tickets?q=${encodeURIComponent(searchQuery.trim())}`);
-            searchRef.current?.blur();
-        } else if (e.key === 'Escape') {
-            setSearchQuery('');
-            searchRef.current?.blur();
-        }
-    };
-
-    const handleSearchClear = () => {
-        setSearchQuery('');
-        searchRef.current?.focus();
-    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
