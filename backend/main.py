@@ -549,7 +549,7 @@ async def get_tickets(company_id: str | None = None):
     return res.data
 
 @app.post("/tickets/save")
-async def save_ticket(request_body: TicketSaveRequest):
+async def save_ticket(request_body: TicketSaveRequest, user: dict = Depends(get_current_user)):
     """
     OFFICIAL PERSISTENCE: Saves the analyzed ticket to Supabase.
     This is called AFTER the user confirms the analysis results.
@@ -558,42 +558,44 @@ async def save_ticket(request_body: TicketSaveRequest):
         raise HTTPException(status_code=500, detail="Supabase connection not initialized.")
 
     logger = logging.getLogger(__name__)
+    authenticated_user_id = user["id"]
     try:
         final_data = request_body.dict()
+        # Derive user_id from verified token, not from request body
+        final_data["user_id"] = authenticated_user_id
 
-        # Resolve tenant linkage from user profile with authorization validation.
+        # Resolve tenant linkage from authenticated user profile.
         profile = {}
-        if request_body.user_id:
-            try:
-                profile_res = (
-                    supabase.table("profiles")
-                    .select("company_id, company")
-                    .eq("id", request_body.user_id)
-                    .single()
-                    .execute()
-                )
-                profile = profile_res.data or {}
-                if not profile:
-                    raise HTTPException(status_code=404, detail="User profile not found")
-            except HTTPException:
-                raise
-            except Exception as profile_error:
-                user_hash = hashlib.sha256(str(request_body.user_id).encode()).hexdigest()[:8]
-                logger.error(f"Tenant resolution error for user {user_hash}: {profile_error}")
-                raise HTTPException(status_code=503, detail="Failed to resolve tenant linkage") from profile_error
+        try:
+            profile_res = (
+                supabase.table("profiles")
+                .select("company_id, company")
+                .eq("id", authenticated_user_id)
+                .single()
+                .execute()
+            )
+            profile = profile_res.data or {}
+            if not profile:
+                raise HTTPException(status_code=404, detail="User profile not found")
+        except HTTPException:
+            raise
+        except Exception as profile_error:
+            user_hash = hashlib.sha256(str(authenticated_user_id).encode()).hexdigest()[:8]
+            logger.error(f"Tenant resolution error for user {user_hash}: {profile_error}")
+            raise HTTPException(status_code=503, detail="Failed to resolve tenant linkage") from profile_error
 
         # Validate tenant consistency and authorization.
         profile_company_id = profile.get("company_id")
         if final_data.get("company_id"):
             # User provided company_id: verify it matches their profile.
             if profile_company_id and final_data["company_id"] != profile_company_id:
-                user_hash = hashlib.sha256(str(request_body.user_id).encode()).hexdigest()[:8]
+                user_hash = hashlib.sha256(str(authenticated_user_id).encode()).hexdigest()[:8]
                 logger.warning(f"Tenant mismatch: user {user_hash} attempted {final_data['company_id']}, assigned to {profile_company_id}")
                 raise HTTPException(status_code=403, detail="User not authorized for this tenant")
         elif profile_company_id:
             # Backfill company_id from profile.
             final_data["company_id"] = profile_company_id
-        elif request_body.user_id:
+        else:
             # User has no tenant assignment.
             raise HTTPException(status_code=400, detail="User has no tenant assignment")
 
@@ -601,52 +603,66 @@ async def save_ticket(request_body: TicketSaveRequest):
         if not final_data.get("company") and profile.get("company"):
             final_data["company"] = profile["company"]
 
-        user_hash = hashlib.sha256(str(request_body.user_id).encode()).hexdigest()[:8]
+        user_hash = hashlib.sha256(str(authenticated_user_id).encode()).hexdigest()[:8]
         logger.info(f"Tenant linkage: user_hash={user_hash}, company_id={final_data.get('company_id')}")
 
+        # Insert ticket with rollback support
+        ticket_id = None
+        try:
+            res = supabase.table("tickets").insert(final_data).execute()
+            if not res.data:
+                raise Exception("Failed to insert ticket into database.")
+            ticket_id = res.data[0]["id"]
 
-        res = supabase.table("tickets").insert(final_data).execute()
-        
-        if not res.data:
-            raise Exception("Failed to insert ticket into database.")
-            
-        ticket_id = res.data[0]["id"]
-
-        duplicate_indexed = True
-        duplicate_index_warning = None
-        description_text = (request_body.description or "").strip()
-        subject_text = (request_body.subject or "").strip()
-        duplicate_text = description_text or subject_text
-        if duplicate_text:
-            try:
-                duplicate_service.add_ticket(str(ticket_id), duplicate_text)
-            except Exception as index_error:
+            duplicate_indexed = True
+            duplicate_index_warning = None
+            description_text = (request_body.description or "").strip()
+            subject_text = (request_body.subject or "").strip()
+            duplicate_text = description_text or subject_text
+            if duplicate_text:
+                try:
+                    duplicate_service.add_ticket(str(ticket_id), duplicate_text)
+                except Exception as index_error:
+                    duplicate_indexed = False
+                    duplicate_index_warning = "Duplicate index update failed."
+                    print(f"[WARNING] {duplicate_index_warning} ticket_id={ticket_id} error={index_error}")
+            else:
                 duplicate_indexed = False
-                duplicate_index_warning = "Duplicate index update failed."
-                print(f"[WARNING] {duplicate_index_warning} ticket_id={ticket_id} error={index_error}")
-        else:
-            duplicate_indexed = False
-            duplicate_index_warning = "Duplicate index update skipped: no description or subject text was provided."
-            print(f"[WARNING] {duplicate_index_warning}")
-        
-        # Add initial system diagnostic message
-        msg = "Our Neural Engine has successfully triaged your issue and routed it to the designated team."
-        if final_data["auto_resolve"]:
-            msg = "AI Auto-Resolution active: A verified solution has been identified. Please review the attached resolution steps."
+                duplicate_index_warning = "Duplicate index update skipped: no description or subject text was provided."
+                print(f"[WARNING] {duplicate_index_warning}")
 
-        supabase.table("ticket_messages").insert({
-            "ticket_id": ticket_id,
-            "sender_id": "00000000-0000-0000-0000-000000000000", # System ID
-            "sender_name": "AI Assistant",
-            "sender_role": "admin",
-            "message": msg
-        }).execute()
-        
+            # Add initial system diagnostic message
+            msg = "Our Neural Engine has successfully triaged your issue and routed it to the designated team."
+            if final_data["auto_resolve"]:
+                msg = "AI Auto-Resolution active: A verified solution has been identified. Please review the attached resolution steps."
+
+            msg_res = supabase.table("ticket_messages").insert({
+                "ticket_id": ticket_id,
+                "sender_id": "00000000-0000-0000-0000-000000000000", # System ID
+                "sender_name": "AI Assistant",
+                "sender_role": "admin",
+                "message": msg
+            }).execute()
+
+            if not msg_res.data:
+                raise Exception("Failed to insert initial ticket message.")
+        except Exception:
+            # Compensating rollback: remove the ticket if any side effect failed
+            if ticket_id:
+                try:
+                    supabase.table("tickets").delete().eq("id", ticket_id).execute()
+                    print(f"[ROLLBACK] Deleted ticket {ticket_id} after side-effect failure.")
+                except Exception as rollback_error:
+                    logger.error(f"[ROLLBACK FAILED] Could not delete ticket {ticket_id}: {rollback_error}")
+            raise
+
         response = {"status": "success", "ticket_id": ticket_id, "duplicate_indexed": duplicate_indexed}
         if duplicate_index_warning:
             response["duplicate_index_warning"] = duplicate_index_warning
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
