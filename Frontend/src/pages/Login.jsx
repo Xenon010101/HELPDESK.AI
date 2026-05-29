@@ -6,6 +6,7 @@ import useAuthStore from "../store/authStore";
 import { Eye, EyeOff, BrainCircuit, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 
 function Login() {
+  const isDark = document.documentElement.classList.contains('dark');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -123,29 +124,6 @@ function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setError("");
-      await loginWithGoogle();
-    } catch (err) {
-      console.error("Google login error:", err);
-      setError(err.message || "Google Sign-In failed.");
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError("");
-    try {
-      await signInWithGoogle();
-    } catch (err) {
-      console.error("Google login error:", err);
-      let errMsg = err.message || "Failed to sign in with Google.";
-      if (errMsg.toLowerCase().includes("failed to fetch")) {
-        errMsg = "Network Error: Failed to fetch. Please try disabling your ad-blocker for this site and refresh!";
-      }
-      setError(errMsg);
-    }
-  };
 
   const currentSubmitHandler = isMagicLink ? handleMagicLink : handleLogin;
 
@@ -226,21 +204,7 @@ function Login() {
                 <span style={{ fontWeight: 800, fontSize: '16px', color: '#0f1f12' }}>HelpDesk.ai</span>
               </Link>
             </div>
-            <h2
-              style={{
-                fontFamily: "'Syne', sans-serif",
-                fontSize: '28px',
-                fontWeight: 800,
-                color: isDark ? '#ffffff' : '#0f1f12',
-                letterSpacing: '-0.02em',
-                marginBottom: '8px',
-              }}
-            >
-              <div className="p-2 rounded-full bg-slate-50 dark:bg-[#1a2e24] border border-slate-200 dark:border-[#2a4034] group-hover:border-emerald-500 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </div>
-              <span className="text-sm font-semibold">Back to Home</span>
-            </Link>
+
 
             {/* Header */}
             <div className="text-center mb-8">

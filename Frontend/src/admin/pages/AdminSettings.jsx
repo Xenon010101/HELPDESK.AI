@@ -23,8 +23,6 @@ import {
 } from '../../utils/adminSettingsPersistence';
 
 import { Select } from "../../components/ui/select";
-import useAuthStore from '../../store/authStore';
-import { supabase } from '../../lib/supabaseClient';
 
 /**
  * AdminSettings Page
@@ -113,6 +111,11 @@ const AdminSettings = () => {
         updateSettings({ [key]: value });
         setHasUnsavedChanges(true);
         setStatusMessage('Saving changes...');
+    };
+
+    const digestEnabled = settings.digestEnabled || false;
+    const handleDigestToggle = () => {
+        handleChange('digestEnabled', !digestEnabled);
     };
 
     const handleSaveSettings = useCallback(() => {
