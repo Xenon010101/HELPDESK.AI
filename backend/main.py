@@ -62,6 +62,7 @@ except (ImportError, Exception) as e:
 
 # Ensure project root is on path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from backend.services.classifier_service import ClassifierService
 from backend.services.classifier_v2 import classifier_v2
