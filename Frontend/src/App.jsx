@@ -231,6 +231,7 @@ function App() {
       <BrowserRouter>
         <TitleUpdater />
         <ScrollToTop />
+        <ScrollToTopButton />
         <Toaster />
         <BugReportWidget />
         <BackToTop />
