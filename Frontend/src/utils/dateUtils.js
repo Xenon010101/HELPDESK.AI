@@ -17,6 +17,13 @@ const normalizeDateStr = (dateStr) => {
     // e.g. "2024-01-15 14:30:00+00" → "2024-01-15T14:30:00+00"
     s = s.replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})/, '$1T$2');
 
+    // Normalize short timezone offsets to ±HH:MM format (Safari requires colon)
+    // e.g. "+00" → "+00:00", "-05" → "-05:00", "+0530" → "+05:30"
+    s = s.replace(
+        /([+-])(\d{2})(\d{2})?$/,
+        (_, sign, hh, mm) => `${sign}${hh}:${mm || '00'}`
+    );
+
     // Ensure trailing Z for UTC if no timezone info is present
     // after normalization (bare "2024-01-15T14:30:00" → "2024-01-15T14:30:00Z")
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s)) {
