@@ -7,7 +7,6 @@ import { Eye, EyeOff, BrainCircuit, ArrowRight, Loader2, ArrowLeft } from "lucid
 
 function Login() {
   const [email, setEmail] = useState("");
-  const isDark = document.documentElement.classList.contains('dark');
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -141,12 +140,7 @@ function Login() {
 
       {/* ── Left Panel ── */}
       <div
-        className="hidden lg:flex w-1/2 items-center justify-center p-12 relative overflow-hidden"
-        style={{
-          background: document.documentElement.classList.contains('dark') 
-            ? 'linear-gradient(160deg, #0f2a1a 0%, #1a3a25 60%, #0d2b1a 100%)'
-            : 'linear-gradient(160deg, #f0fdf4 0%, #dcfce7 60%, #bbf7d0 100%)',
-        }}
+        className="hidden lg:flex lg:w-1/2 items-center justify-center p-12 relative overflow-hidden bg-gradient-to-br from-green-50 via-green-100 to-green-200 dark:from-emerald-950 dark:via-slate-900 dark:to-emerald-950 border-r border-green-100 dark:border-emerald-900/30"
       >
         <div
           className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none opacity-100 dark:opacity-20"
@@ -157,40 +151,24 @@ function Login() {
 
         <div className="relative z-10 max-w-lg">
           <div
-            className="p-3 rounded-2xl w-fit mb-8"
-            style={{ background: 'rgba(34,160,69,0.08)', border: '1px solid #d1fae5' }}
+            className="p-3 rounded-2xl w-fit mb-8 bg-green-600/10 border border-green-200 dark:border-emerald-500/20"
           >
-            <BrainCircuit className="w-10 h-10" style={{ color: '#16a34a' }} />
+            <BrainCircuit className="w-10 h-10 text-green-600 dark:text-emerald-400" />
           </div>
 
-          <h1
-            style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '48px',
-              fontWeight: 800,
-              color: isDark ? '#ffffff' : '#0f1f12',
-              letterSpacing: '-0.03em',
-              lineHeight: 1.1,
-              marginBottom: '24px',
-            }}
-          >
+          {/* Headline */}
+          <h1 className="font-syne text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-6">
             Automate your{' '}
-            <span style={{ color: '#16a34a' }}>IT Support</span>
+            <span className="text-green-600 dark:text-emerald-400">IT Support</span>
           </h1>
 
-          <p style={{ color: isDark ? '#d1fae5' : '#374151', fontSize: '16px', lineHeight: 1.7, marginBottom: '32px' }}>
+          {/* Subtext */}
+          <p className="text-slate-600 dark:text-emerald-100/70 text-lg leading-relaxed mb-10">
             Join thousands of IT teams using HelpDesk.ai to categorize, route, and resolve tickets instantly.
           </p>
 
-          <div
-            style={{
-              background: '#ffffff',
-              border: '1px solid #d1fae5',
-              borderRadius: '14px',
-              padding: '14px 18px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-            }}
-          >
+          {/* System Status Badge */}
+          <div className="bg-white dark:bg-slate-900/50 border border-green-100 dark:border-emerald-500/20 rounded-2xl p-5 shadow-sm backdrop-blur-sm">
             <div className="flex gap-4 items-start">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-emerald-50 dark:bg-[#102219]">
                 <div className="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm">AI</div>
@@ -219,7 +197,7 @@ function Login() {
           onMouseEnter={(e) => e.currentTarget.style.color = '#16a34a'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
         >
-          <div className="p-2 rounded-full transition-all" style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+          <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 group-hover:border-green-200 dark:group-hover:border-emerald-500/30 transition-all">
             <ArrowLeft className="w-4 h-4" />
           </div>
           <span className="hidden sm:inline">Back to Home</span>
@@ -378,25 +356,24 @@ function Login() {
           </div>
 
           {error && (
-            <div className="mb-6 flex items-start gap-3" style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '14px 16px' }}>
-              <div className="rounded-full p-1 mt-0.5" style={{ background: '#fee2e2' }}>
-                <ArrowRight className="w-3 h-3 text-red-600 rotate-45" />
+            <div className="mb-6 flex items-start gap-3 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="rounded-full p-1 mt-0.5 bg-red-100 dark:bg-red-900/40">
+                <ArrowRight className="w-3 h-3 text-red-600 dark:text-red-400 rotate-45" />
               </div>
-              <p className="text-sm font-medium" style={{ color: '#b91c1c' }}>{error}</p>
+              <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
           {magicLinkSent ? (
             <div className="text-center py-6">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: '#f0fdf4', border: '1px solid #d1fae5' }}>
-                <BrainCircuit className="w-8 h-8" style={{ color: '#16a34a' }} />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 bg-green-50 dark:bg-emerald-950/40 border border-green-100 dark:border-emerald-900/30">
+                <BrainCircuit className="w-8 h-8 text-green-600 dark:text-emerald-400" />
               </div>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0f1f12', marginBottom: '8px' }}>Check your email</h3>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>We've sent a magic link to <span style={{ fontWeight: 600, color: '#111827' }}>{email}</span></p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Check your email</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">We've sent a magic link to <span className="font-bold text-slate-900 dark:text-emerald-50">{email}</span></p>
               <button
                 onClick={() => setMagicLinkSent(false)}
-                className="hover:underline transition-all"
-                style={{ color: '#16a34a', fontWeight: 700, fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer' }}
+                className="text-green-600 dark:text-emerald-400 font-bold text-sm hover:underline underline-offset-4 transition-all"
               >
                 Try another email
               </button>
@@ -404,47 +381,28 @@ function Login() {
           ) : (
             <form onSubmit={currentSubmitHandler} className="space-y-4 sm:space-y-5">
               <div>
-                <label
-                  className="block mb-2"
-                  style={{ fontSize: '12px', fontWeight: 600, color: '#374151', letterSpacing: '0.05em', textTransform: 'uppercase' }}
-                >
+                <label className="block mb-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Email Address
                 </label>
                 <input
                   type="email"
                   placeholder="Enter your system email"
-                  style={{
-                    width: '100%',
-                    background: '#f9fafb',
-                    border: '1.5px solid #e5e7eb',
-                    borderRadius: '12px',
-                    padding: '13px 16px',
-                    fontSize: '15px',
-                    color: '#111827',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = '#22c55e'; e.target.style.boxShadow = '0 0 0 3px rgba(34,160,69,0.1)'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 dark:focus:border-emerald-500/50 transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
 
               {!isMagicLink && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
                   <div className="flex justify-between items-center mb-2">
-                    <label
-                      className="block"
-                      style={{ fontSize: '12px', fontWeight: 600, color: '#374151', letterSpacing: '0.05em', textTransform: 'uppercase' }}
-                    >
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                       Password
                     </label>
                     <Link
                       to="/forgot-password"
-                      title="Reset your password"
-                      className="transition-all"
-                      style={{ fontSize: '12px', fontWeight: 600, color: '#16a34a' }}
+                      className="text-[10px] font-bold text-green-600 dark:text-emerald-400 hover:underline underline-offset-2 tracking-wide uppercase"
                     >
                       Forgot password?
                     </Link>
@@ -453,28 +411,15 @@ function Login() {
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      style={{
-                        width: '100%',
-                        background: '#f9fafb',
-                        border: '1.5px solid #e5e7eb',
-                        borderRadius: '12px',
-                        padding: '13px 16px',
-                        paddingRight: '44px',
-                        fontSize: '15px',
-                        color: '#111827',
-                        outline: 'none',
-                        transition: 'border-color 0.2s, box-shadow 0.2s',
-                      }}
-                      onFocus={(e) => { e.target.style.borderColor = '#22c55e'; e.target.style.boxShadow = '0 0 0 3px rgba(34,160,69,0.1)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pr-11 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 dark:focus:border-emerald-500/50 transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      required={!isMagicLink}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                      style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-400 transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -485,21 +430,7 @@ function Login() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{
-                  background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-                  color: '#ffffff',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 20px rgba(34,160,69,0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(34,160,69,0.35)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(34,160,69,0.3)'; }}
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-500 dark:from-emerald-600 dark:to-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 hover:shadow-green-600/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
                 {!isSubmitting && (isMagicLink ? "Send Magic Link" : "Sign In")}
@@ -535,7 +466,7 @@ function Login() {
                   }
                 }}
               >
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
@@ -546,35 +477,22 @@ function Login() {
 
               {/* Divider */}
               <div className="relative flex items-center py-2">
-                <div className="flex-grow" style={{ borderTop: '1px solid #e5e7eb' }}></div>
-                <span className="flex-shrink-0 mx-4" style={{ color: '#9ca3af', fontSize: '13px', fontWeight: 500 }}>Or</span>
-                <div className="flex-grow" style={{ borderTop: '1px solid #e5e7eb' }}></div>
+                <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+                <span className="flex-shrink-0 mx-4 text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Or</span>
+                <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
               </div>
 
               <button
                 type="button"
                 onClick={() => { setIsMagicLink(!isMagicLink); setError(""); }}
-                className="w-full flex items-center justify-center gap-2 transition-all"
-                style={{
-                  background: '#ffffff',
-                  border: '1.5px solid #d1fae5',
-                  color: '#15803d',
-                  borderRadius: '12px',
-                  padding: '13px',
-                  fontWeight: 500,
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                className="w-full py-3.5 bg-transparent border border-green-100 dark:border-emerald-500/20 text-green-700 dark:text-emerald-400 rounded-xl font-semibold text-sm hover:bg-green-50 dark:hover:bg-emerald-500/10 transition-all active:scale-[0.98]"
               >
                 {isMagicLink ? "Sign in with Password" : "Sign in with Magic Link"}
               </button>
 
               <p className="text-center" style={{ fontSize: '14px', color: '#6b7280', marginTop: '20px' }}>
                 Don't have an account?{" "}
-                <Link to="/signup" className="hover:underline transition-all" style={{ color: '#16a34a', fontWeight: 600 }}>
+                <Link to="/signup" className="text-green-600 dark:text-emerald-400 font-bold hover:underline underline-offset-4">
                   Create Account
                 </Link>
               </p>

@@ -223,7 +223,7 @@ function Signup() {
         onMouseEnter={(e) => e.currentTarget.style.color = '#16a34a'}
         onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
       >
-        <div className="p-2 rounded-full transition-all" style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}>
+        <div className="p-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 group-hover:border-green-200 dark:group-hover:border-emerald-500/30 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </div>
         <span className="hidden sm:inline">Back to Home</span>
@@ -362,8 +362,8 @@ function Signup() {
                   </button>
                 </div>
                 {password && (
-                  <p aria-live="polite" className={`mt-2 text-[11px] font-semibold ${passwordWarning ? "text-red-600" : "text-emerald-700"}`}>
-                    {passwordWarning || "Password looks good."}
+                  <p aria-live="polite" className={`mt-2 text-[10px] font-bold tracking-tight uppercase ${passwordWarning ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {passwordWarning || "Password Secure"}
                   </p>
                 )}
               </div>
@@ -383,8 +383,8 @@ function Signup() {
                   </button>
                 </div>
                 {confirmPasswordWarning && (
-                  <p aria-live="polite" className="mt-2 text-[11px] font-semibold text-red-600">
-                    {confirmPasswordWarning}
+                  <p aria-live="polite" className="mt-2 text-[10px] font-bold tracking-tight uppercase text-red-500">
+                    Mismatch
                   </p>
                 )}
               </div>

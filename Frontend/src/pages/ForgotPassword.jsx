@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import { BrainCircuit, Mail, ArrowLeft, Loader2, CheckCircle2, ShieldCheck, Lock, KeyRound, AlertCircle } from "lucide-react";
+import { BrainCircuit, Mail, ArrowLeft, Loader2, CheckCircle2, Lock, KeyRound, AlertCircle } from "lucide-react";
  
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,7 +16,6 @@ function ForgotPassword() {
     const [timeLeft, setTimeLeft] = useState(900);
     const [timerExpired, setTimerExpired] = useState(false);
 
-    // Only re-run when step changes. DO NOT add timeLeft to deps array.
     useEffect(() => {
         if (step !== 2) return;
         setTimerExpired(false);
@@ -152,8 +151,7 @@ function ForgotPassword() {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-white dark:bg-[#1a2e24] border border-white/50 dark:border-[#2a4034] shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden w-full"
                 >
-                    {/* Header Decoration */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 opacity-20"></div>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-600 opacity-20"></div>
 
                     <div className="text-center mb-10">
                         <h2 className="text-3xl font-black text-[#0f1f12] dark:text-emerald-400 tracking-tight font-syne">

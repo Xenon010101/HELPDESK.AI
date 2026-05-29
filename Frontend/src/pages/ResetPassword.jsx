@@ -13,7 +13,6 @@ function ResetPassword() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Supabase handles the recovery token via hash automatically
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session && !window.location.hash.includes('access_token')) {
@@ -155,6 +154,16 @@ function ResetPassword() {
                             >
                                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Password"}
                             </button>
+
+                            <div className="text-center pt-6 border-t border-slate-50 dark:border-slate-800 mt-4">
+                                <Link
+                                    to="/login"
+                                    className="inline-flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-emerald-400 text-[10px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Return to Secure Gate
+                                </Link>
+                            </div>
                         </form>
                     )}
                 </div>
