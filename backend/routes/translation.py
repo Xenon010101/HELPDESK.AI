@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from services.translation_service import (
+from backend.services.translation_service import (
     translate_text,
     translate_ticket,
     detect_language,
@@ -27,6 +27,11 @@ class TranslateTicketRequest(BaseModel):
     description: Optional[str] = None
     messages: Optional[list[dict]] = None
     target_lang: str = Field(default="en", max_length=5)
+
+
+class DetectLanguageRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+
 
 
 @router.post("/translate")
@@ -62,9 +67,9 @@ async def translate_ticket_endpoint(request: TranslateTicketRequest):
 
 
 @router.post("/detect")
-async def detect(text: str = Field(..., min_length=1)):
+async def detect(request: DetectLanguageRequest):
     """Detect the language of the given text."""
-    lang = detect_language(text)
+    lang = detect_language(request.text)
     if not lang:
         raise HTTPException(status_code=400, detail="Could not detect language")
     languages = get_supported_languages()
