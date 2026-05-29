@@ -212,7 +212,9 @@ function App() {
   const { initialize } = useAuthStore();
 
   useEffect(() => {
-    initialize();
+    initialize().catch((err) => {
+      console.error('Auth initialize failed:', err);
+    });
   }, [initialize]);
 
   return (
