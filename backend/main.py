@@ -411,6 +411,14 @@ class DuplicateInfo(BaseModel):
     similarity: float = 0.0
 
 
+class IncidentInfo(BaseModel):
+    incident_id: str | None = None
+    is_major_incident: bool = False
+    ticket_count: int = 0
+    affected_users: int = 0
+    similarity: float = 0.0
+
+
 class EntityInfo(BaseModel):
     text: str
     label: str
@@ -436,6 +444,7 @@ class TicketResponse(BaseModel):
     assigned_team: str
     entities: list[EntityInfo]
     duplicate_ticket: DuplicateInfo
+    incident: IncidentInfo = IncidentInfo()
     confidence: float
     needs_review: bool = False
     reasoning: str = ""
@@ -503,6 +512,7 @@ class ReadinessResponse(BaseModel):
 classifier_service = ClassifierService()
 ner_service = NERService()
 duplicate_service = DuplicateService()
+incident_service = IncidentService(duplicate_service)
 rag_service = RagService()
 spam_service = SpamService()
 sla_engine = SLAEngine(supabase_client=None)  # Will be reassigned after supabase init
@@ -1670,6 +1680,21 @@ async def analyze_only(request_body: TicketRequest, request: Request):
     except Exception:
         dup_result = {"is_duplicate": False, "duplicate_ticket_id": None, "similarity": 0.0}
 
+    # --- Incident correlation (Enterprise Outage Detection) ---
+    try:
+        incident_result = incident_service.correlate(
+            text,
+            user_id=request_body.user_id,
+            category=classification.get("category"),
+            priority=classification.get("priority"),
+        )
+    except Exception as e:
+        print(f"[INCIDENT ERROR] {e}")
+        incident_result = {
+            "incident_id": None, "is_major_incident": False,
+            "ticket_count": 0, "affected_users": 0, "similarity": 0.0,
+        }
+
     # --- RAG Knowledge Base Check ---
     rag_match = None
     try:
@@ -1690,6 +1715,16 @@ async def analyze_only(request_body: TicketRequest, request: Request):
         decision_factors.append(f"Detected entities: {', '.join([e['text'] for e in entities[:2]])}")
     if dup_result["is_duplicate"]:
         decision_factors.append(f"Found similar incident ({int(dup_result['similarity']*100)}%)")
+    if incident_result.get("is_major_incident"):
+        decision_factors.append(
+            f"Linked to Major Incident {incident_result['incident_id']} "
+            f"({incident_result['ticket_count']} tickets, {incident_result['affected_users']} users)"
+        )
+    elif incident_result.get("incident_id") and incident_result.get("ticket_count", 0) > 1:
+        decision_factors.append(
+            f"Correlated to incident {incident_result['incident_id']} "
+            f"({incident_result['ticket_count']} related tickets)"
+        )
     if rag_match:
         decision_factors.append(f"Found solution article: '{rag_match['title']}'")
     if spam_result["is_spam"]:
@@ -1706,7 +1741,7 @@ async def analyze_only(request_body: TicketRequest, request: Request):
         reasoning += " Ticket flagged as spam/phishing and quarantined from agent inbox."
     
     timeline["routed"] = get_now_ist()
-    
+
     # --- Gemini Summary ---
     if gemini_service and gemini_service._initialized:
         summary = gemini_service.get_summary(text)
@@ -1726,6 +1761,7 @@ async def analyze_only(request_body: TicketRequest, request: Request):
         assigned_team=classification["assigned_team"],
         entities=[EntityInfo(**e) for e in entities],
         duplicate_ticket=DuplicateInfo(**dup_result),
+        incident=IncidentInfo(**incident_result),
         confidence=classification["confidence"],
         needs_review=classification["confidence"] < 0.20,
         reasoning=reasoning,
@@ -1818,6 +1854,23 @@ async def analyze_stream(request_body: TicketRequest):
         except Exception:
             dup_result = {"is_duplicate": False, "duplicate_ticket_id": None, "similarity": 0.0}
 
+        # 4b. Incident correlation
+        yield f"data: {json.dumps({'step': 'Correlating to active incidents', 'status': 'in_progress'})}\n\n"
+        await asyncio.sleep(0.2)
+        try:
+            incident_result = incident_service.correlate(
+                text,
+                user_id=request_body.user_id,
+                category=classification.get("category"),
+                priority=classification.get("priority"),
+            )
+        except Exception as e:
+            print(f"[INCIDENT ERROR] {e}")
+            incident_result = {
+                "incident_id": None, "is_major_incident": False,
+                "ticket_count": 0, "affected_users": 0, "similarity": 0.0,
+            }
+
         # 5. RAG / Solutions
         yield f"data: {json.dumps({'step': 'Finding possible solutions', 'status': 'in_progress'})}\n\n"
         await asyncio.sleep(0.2)
@@ -1872,6 +1925,7 @@ async def analyze_stream(request_body: TicketRequest):
             "assigned_team": classification["assigned_team"],
             "entities": [e for e in entities],
             "duplicate_ticket": dup_result,
+            "incident": incident_result,
             "confidence": classification["confidence"],
             "needs_review": classification["confidence"] < 0.20,
             "reasoning": reasoning,
