@@ -59,6 +59,7 @@ from backend.services.classifier_v3 import classifier_v3 # V3 Power Model
 from backend.services.ner_service import NERService
 from backend.services.duplicate_service import DuplicateService
 from backend.services.rag_service import RagService
+from backend.services.sla_prediction_service import SLAPredictionService
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +162,18 @@ class TicketRecord(BaseModel):
 TICKETS_DB: list[TicketRecord] = []
 
 
+class SLAPredictRequest(BaseModel):
+    priority: str
+    created_at: str
+    sla_breach_at: str | None = None
+    category: str | None = None
+    assigned_team: str | None = None
+    team_workload: str = "normal"
+    similar_avg_resolution_hours: float | None = None
+    similar_count: int = 0
+    thresholds: dict | None = None
+
+
 class HealthResponse(BaseModel):
     status: str
     classifier_loaded: bool
@@ -179,6 +192,7 @@ classifier_service = ClassifierService()
 ner_service = NERService()
 duplicate_service = DuplicateService()
 rag_service = RagService()
+sla_prediction_service = SLAPredictionService()
 
 try:
     from backend.services.gemini_service import GeminiService
@@ -1000,3 +1014,149 @@ async def analyze_ticket_v2(request: TicketRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# SLA Breach Prediction
+# ---------------------------------------------------------------------------
+def _historical_avg_resolution_hours(category: str | None, priority: str | None) -> tuple[float | None, int]:
+    """Look up the average resolution time of resolved tickets for this
+    category/priority pair. Returns (avg_hours, sample_count)."""
+    if not supabase or not category:
+        return None, 0
+    try:
+        q = (
+            supabase.table("tickets")
+            .select("created_at, updated_at, status, priority, category")
+            .eq("status", "resolved")
+            .eq("category", category)
+        )
+        if priority:
+            q = q.eq("priority", priority)
+        rows = q.limit(200).execute().data or []
+    except Exception as e:
+        print(f"[SLA] Historical lookup failed: {e}")
+        return None, 0
+
+    hours: list[float] = []
+    for r in rows:
+        ca, ua = r.get("created_at"), r.get("updated_at")
+        if not ca or not ua:
+            continue
+        try:
+            delta = (
+                datetime.datetime.fromisoformat(ua.replace("Z", "+00:00"))
+                - datetime.datetime.fromisoformat(ca.replace("Z", "+00:00"))
+            ).total_seconds() / 3600.0
+            if delta > 0:
+                hours.append(delta)
+        except Exception:
+            continue
+    if not hours:
+        return None, 0
+    return round(sum(hours) / len(hours), 2), len(hours)
+
+
+def _team_workload_bucket(assigned_team: str | None, company_id: str | None) -> str:
+    """Estimate a team's current workload from the number of open tickets."""
+    if not supabase or not assigned_team:
+        return "normal"
+    try:
+        q = (
+            supabase.table("tickets")
+            .select("id, status, assigned_team, company_id")
+            .eq("assigned_team", assigned_team)
+            .neq("status", "resolved")
+        )
+        if company_id:
+            q = q.eq("company_id", company_id)
+        open_count = len(q.execute().data or [])
+    except Exception as e:
+        print(f"[SLA] Workload lookup failed: {e}")
+        return "normal"
+
+    if open_count < 5:
+        return "low"
+    if open_count < 15:
+        return "normal"
+    if open_count < 30:
+        return "high"
+    return "overloaded"
+
+
+@app.post("/ai/sla/predict")
+async def predict_sla_breach(request_body: SLAPredictRequest):
+    """Predict SLA breach risk for a single ticket with an explainable score."""
+    predictor = SLAPredictionService(thresholds=request_body.thresholds) if request_body.thresholds else sla_prediction_service
+
+    avg_hours = request_body.similar_avg_resolution_hours
+    sample_count = request_body.similar_count
+    if avg_hours is None:
+        avg_hours, sample_count = _historical_avg_resolution_hours(
+            request_body.category, request_body.priority
+        )
+
+    try:
+        return predictor.predict(
+            priority=request_body.priority,
+            created_at=request_body.created_at,
+            sla_breach_at=request_body.sla_breach_at,
+            category=request_body.category,
+            assigned_team=request_body.assigned_team,
+            team_workload=request_body.team_workload,
+            similar_avg_resolution_hours=avg_hours,
+            similar_count=sample_count,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/ai/sla/dashboard")
+async def sla_risk_dashboard(company_id: str | None = None):
+    """Risk dashboard — per-ticket predictions plus an aggregate summary."""
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    query = (
+        supabase.table("tickets")
+        .select("id, ticket_id, priority, category, assigned_team, status, created_at, sla_breach_at, company_id")
+        .neq("status", "resolved")
+    )
+    if company_id:
+        query = query.eq("company_id", company_id)
+    rows = query.limit(500).execute().data or []
+
+    predictions: list[dict] = []
+    workload_cache: dict[tuple[str, str | None], str] = {}
+    for r in rows:
+        if not r.get("created_at") or not r.get("priority"):
+            continue
+        team = r.get("assigned_team")
+        cache_key = (team or "", r.get("company_id"))
+        if cache_key not in workload_cache:
+            workload_cache[cache_key] = _team_workload_bucket(team, r.get("company_id"))
+        avg_hours, sample_count = _historical_avg_resolution_hours(r.get("category"), r.get("priority"))
+        try:
+            pred = sla_prediction_service.predict(
+                priority=r["priority"],
+                created_at=r["created_at"],
+                sla_breach_at=r.get("sla_breach_at"),
+                category=r.get("category"),
+                assigned_team=team,
+                team_workload=workload_cache[cache_key],
+                similar_avg_resolution_hours=avg_hours,
+                similar_count=sample_count,
+            )
+        except Exception as e:
+            print(f"[SLA] Skipping ticket {r.get('ticket_id')}: {e}")
+            continue
+        pred["ticket_id"] = r.get("ticket_id") or r.get("id")
+        predictions.append(pred)
+
+    summary = sla_prediction_service.summarize(predictions)
+    escalations = [
+        {"ticket_id": p["ticket_id"], "risk_level": p["risk_level"], "breach_probability": p["breach_probability"]}
+        for p in predictions
+        if p["should_escalate"]
+    ]
+    return {"summary": summary, "predictions": predictions, "escalations": escalations}
