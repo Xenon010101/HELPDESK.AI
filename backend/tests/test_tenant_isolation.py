@@ -172,7 +172,9 @@ def test_save_ticket_context_spoofing_prevention():
         "is_duplicate": False,
         "confidence": 0.9,
         "company_id": "companyA",
-        "sla_breach_at": "2026-05-30T12:00:00Z"
+        "sla_breach_at": "2026-05-30T12:00:00Z",
+        "routing_confidence": 0.9,
+        "metadata": {}
     }
 
     # Successful save (matching owner and company)
