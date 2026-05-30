@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
 # HF Rebuild Trigger: 2026-03-08-2030
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -28,7 +28,9 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.encoders import jsonable_encoder
 import asyncio
 from pathlib import Path
-from pydantic import BaseModel
+import urllib.parse
+import re
+from pydantic import BaseModel, validator
 from dotenv import load_dotenv
 
 # Load environment variables from backend/.env
@@ -1143,12 +1145,34 @@ class LoginBody(BaseModel):
     email: str
     password: str
 
+    @validator('email', pre=True, allow_reuse=True)
+    def decode_and_validate_email(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("Email must be a string")
+        # Decode %2B to + without turning + into a space
+        decoded = urllib.parse.unquote(v)
+        # RFC-compliant basic regex that allows aliases like + and .
+        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        if not re.match(pattern, decoded):
+            raise ValueError("Invalid email format")
+        return decoded
+
 class SignupBody(BaseModel):
     email: str
     password: str
     full_name: str | None = None
     role: str | None = "user"
     company: str | None = None
+
+    @validator('email', pre=True, allow_reuse=True)
+    def decode_and_validate_email(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("Email must be a string")
+        decoded = urllib.parse.unquote(v)
+        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        if not re.match(pattern, decoded):
+            raise ValueError("Invalid email format")
+        return decoded
 
 @app.post("/auth/login")
 async def auth_login(body: LoginBody, response: Response):
@@ -1159,7 +1183,7 @@ async def auth_login(body: LoginBody, response: Response):
             {"email": body.email, "password": body.password}
         )
     except Exception as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail="Invalid email or password.") from exc
 
     session = getattr(result, "session", None)
     user = getattr(result, "user", None)
@@ -1191,7 +1215,7 @@ async def auth_signup(body: SignupBody, response: Response):
             }
         )
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid signup details or email already in use.") from exc
 
     session = getattr(result, "session", None)
     user = getattr(result, "user", None)
