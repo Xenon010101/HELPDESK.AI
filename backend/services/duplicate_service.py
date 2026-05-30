@@ -106,8 +106,9 @@ class DuplicateService:
             self._embedding_matrix_dirty = False
             return
 
-        self._ticket_ids = [tid for tid, _, _ in self._tickets]
-        embeddings = [emb for _, emb, _ in self._tickets]
+        tickets = list(self._tickets)  # consistent snapshot
+        self._ticket_ids = [tid for tid, _, _ in tickets]
+        embeddings = [emb for _, emb, _ in tickets]
         self._embedding_matrix = torch.stack(embeddings)
         self._embedding_matrix_dirty = False
 
@@ -122,7 +123,7 @@ class DuplicateService:
         self._embedding_matrix_dirty = True
         self.save_to_disk(ticket_id, text)
 
-    def check_duplicate(self, text: str, threshold: float = None) -> dict:
+    def check_duplicate(self, text: str, threshold: float | None = None) -> dict:
         """
         Check if a ticket is a duplicate of any stored ticket.
 

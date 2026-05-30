@@ -25,6 +25,8 @@ def _generate_synthetic_embeddings(n: int, dim: int = EMBEDDING_DIM) -> list[tor
 
 def benchmark_loop(query: torch.Tensor, stored: list[torch.Tensor], rounds: int = 5) -> float:
     """Old approach: iterate and compute cos_sim one at a time."""
+    # Warm up to avoid one-time allocation overhead
+    _ = [util.cos_sim(query, emb).item() for emb in stored]
     times = []
     for _ in range(rounds):
         t0 = time.perf_counter()
@@ -37,6 +39,8 @@ def benchmark_loop(query: torch.Tensor, stored: list[torch.Tensor], rounds: int 
 def benchmark_vectorized(query: torch.Tensor, matrix: torch.Tensor, rounds: int = 5) -> float:
     """New approach: single batched cos_sim call."""
     query_2d = query.unsqueeze(0)
+    # Warm up to avoid one-time allocation overhead
+    _ = util.cos_sim(query_2d, matrix).squeeze(0)
     times = []
     for _ in range(rounds):
         t0 = time.perf_counter()
