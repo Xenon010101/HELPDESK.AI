@@ -7,6 +7,8 @@ import useAuthStore from "../../store/authStore";
 import useToastStore from "../../store/toastStore";
 import { supabase } from "../../lib/supabaseClient";
 import useTicketsRealtime from "../../hooks/useTicketsRealtime";
+import TagFilter from "../../components/TagFilter";
+import TagChip from "../../components/TagChip";
 import {
     Search,
     Filter,
@@ -51,19 +53,23 @@ const AdminTickets = () => {
     const [languageFilter, setLanguageFilter] = useState('All');
     const [slaAtRisk, setSlaAtRisk] = useState(false);
     const [agents, setAgents] = useState([]); // All staff/admins in the company
+    const [tagFilters, setTagFilters] = useState([]);
 
     const ticketMatchesFilters = useCallback((ticket) => {
         if (statusFilter !== 'All' && String(ticket.status || '').toLowerCase() !== statusFilter.toLowerCase()) return false;
         if (categoryFilter !== 'All' && ticket.category !== categoryFilter) return false;
         if (priorityFilter !== 'All' && String(ticket.priority || '').toLowerCase() !== priorityFilter.toLowerCase()) return false;
         if (teamFilter !== 'All' && ticket.assigned_team !== teamFilter) return false;
+        if (tagFilters.length > 0 && !(ticket.tags || []).length) return false;
+        if (tagFilters.length > 0 && !tagFilters.every(tag => (ticket.tags || []).includes(tag))) return false;
         if (languageFilter !== 'All') {
             const translated = ticket?.metadata?.translation?.translated;
             if (languageFilter === 'Translated' && !translated) return false;
             if (languageFilter === 'English' && translated) return false;
         }
         return true;
-    }, [categoryFilter, priorityFilter, statusFilter, teamFilter, languageFilter]);
+    }, [categoryFilter, priorityFilter, statusFilter, teamFilter, languageFilter, tagFilters]);
+
 
     const handleRealtimeInsert = useCallback((ticket) => {
         showToast(`New Incident Reported: #${formatTicketId(ticket.id)}`, "success");
@@ -243,8 +249,11 @@ const AdminTickets = () => {
                 return s === 'BREACHED' || s === 'WARNING';
             });
         }
+        if (tagFilters.length > 0) {
+            result = result.filter(t => (t.tags || []).length > 0 && tagFilters.every(tag => (t.tags || []).includes(tag)));
+        }
         return result;
-    }, [tickets, searchQuery, languageFilter, slaAtRisk]);
+    }, [tickets, searchQuery, languageFilter, slaAtRisk, tagFilters]);
 
     const getPriorityStyle = (priority) => {
         const p = String(priority || '').toLowerCase();
@@ -368,6 +377,11 @@ const AdminTickets = () => {
                         )}
                     </button>
                 </div>
+
+                {/* Tag Filter (autocomplete + multi-select) */}
+                <div>
+                    <TagFilter companyId={profile?.company_id} onFilterChange={setTagFilters} />
+                </div>
             </div>
 
             {/* 3. High-Density Data Terminal */}
@@ -452,6 +466,17 @@ const AdminTickets = () => {
                                             <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={ticket.summary || ticket.subject}>
                                                 {ticket.summary || ticket.subject}
                                             </span>
+                                            <LanguageBadge detectedLanguage={ticket?.detected_language} compact />
+                                            {ticket.tags?.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {ticket.tags.slice(0,3).map((tag) => (
+                                                        <TagChip key={tag} tag={tag} variant="admin" />
+                                                    ))}
+                                                    {ticket.tags.length > 3 && (
+                                                        <span className="text-xs text-gray-400">+{ticket.tags.length - 3}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                                 {ticket.category} 
                                                 <span className="text-[9px] font-medium text-slate-300">• {formatTimelineDate(ticket.created_at)}</span>

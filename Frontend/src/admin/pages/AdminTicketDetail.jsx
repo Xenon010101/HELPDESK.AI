@@ -17,6 +17,8 @@ import SLABadge from "../components/SLABadge";
 import { formatFullTimestamp } from "../../utils/dateUtils";
 import TicketTimeline from "../../user/components/TicketTimeline";
 import TicketAuditTimeline from "../components/TicketAuditTimeline";
+import TicketTagManager from '../../components/TicketTagManager';
+import TagChip from '../../components/TagChip';
 
 const AdminTicketDetail = () => {
     const { ticket_id } = useParams();
@@ -346,6 +348,30 @@ const AdminTicketDetail = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Tags */}
+                            <div style={{ marginTop: '20px' }}>
+                                <h4 style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Tags</h4>
+                                {ticket.tags?.length > 0 ? (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {ticket.tags.map((t) => (
+                                            <TagChip key={t} tag={t} variant="admin" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '12px', color: '#6b7280' }}>No tags yet.</p>
+                                )}
+
+                                <div style={{ marginTop: '12px' }}>
+                                    <TicketTagManager
+                                        ticketId={ticket.id}
+                                        ticketTitle={ticket.summary}
+                                        ticketBody={ticket.description}
+                                        category={ticket.category}
+                                        companyId={ticket.company_id}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
