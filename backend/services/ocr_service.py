@@ -6,8 +6,11 @@ No API key required. Runs entirely on the local machine.
 import asyncio
 import base64
 import io
+import re
 
 from PIL import Image
+
+BASE64_REGEX = re.compile(r"^[A-Za-z0-9+/=\s]+$")
 
 MAX_BASE64_LENGTH = 10 * 1024 * 1024
 MAX_DECODED_BYTES = 8 * 1024 * 1024
@@ -53,13 +56,16 @@ class OCRService:
         if "," in image_base64:
             image_base64 = image_base64.split(",", 1)[1]
 
+        if not BASE64_REGEX.match(image_base64):
+            print(f"[OCRService] Invalid base64 characters detected.")
+            return ""
+
+        # Remove all internal/external whitespace and newlines
+        image_base64 = "".join(image_base64.split())
+
         missing_padding = len(image_base64) % 4
         if missing_padding:
             image_base64 += "=" * (4 - missing_padding)
-
-        if not all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=" for c in image_base64):
-            print(f"[OCRService] Invalid base64 characters detected.")
-            return ""
 
         if len(image_base64) > MAX_BASE64_LENGTH:
             print(f"[OCRService] Rejected: base64 length {len(image_base64)} exceeds limit {MAX_BASE64_LENGTH}")
