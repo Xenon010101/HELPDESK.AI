@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import TeamSection from '../components/landing/TeamSection';
+import ThemeToggle from '../components/shared/ThemeToggle';
 
 // ---- Count-up animation component ----
 function AnimatedStat({ target, suffix = '', prefix = '', label, isWord = false }) {
@@ -295,6 +296,7 @@ export default function LandingPage() {
 
                         {/* CTA Buttons */}
                         <div className="hidden md:flex items-center gap-3">
+                            <ThemeToggle />
                             <button
                                 onClick={() => navigate('/login')}
                                 className="text-sm font-semibold text-gray-700 hover:text-emerald-800 transition-colors px-4 py-2 rounded-lg hover:bg-gray-50"

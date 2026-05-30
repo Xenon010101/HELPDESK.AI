@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import useTicketStore from "../../store/ticketStore";
 // removed useNotificationStore
 import NotificationPopover from "./NotificationPopover";
+import ThemeToggle from "../../components/shared/ThemeToggle";
 
 import useAuthStore from "../../store/authStore";
 
@@ -48,6 +49,7 @@ const TopNav = () => {
 
                 {/* Right: Profile */}
                 <div className="flex items-center gap-3">
+                    <ThemeToggle />
                     <NotificationPopover />
                     <div className="hidden md:block">
                         <Avatar

@@ -14,7 +14,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ["next-themes"],
+  },
   build: {
-    sourcemap: true
-  }
+    sourcemap: true,
+  },
 })
