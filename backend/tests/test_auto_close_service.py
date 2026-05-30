@@ -128,6 +128,14 @@ class AutoCloseServiceTests(unittest.TestCase):
             {"auto_close_days": 3, "auto_close_enabled": False},
         )
 
+    def test_get_system_settings_falls_back_when_company_settings_missing(self):
+        service = AutoCloseService()
+
+        settings = service.get_system_settings("company-3")
+
+        self.assertEqual(settings["auto_close_days"], 7)
+        self.assertTrue(settings["auto_close_enabled"])
+
     def test_run_closes_only_resolved_tickets_older_than_company_cutoff(self):
         old_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
         recent_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
