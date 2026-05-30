@@ -1338,3 +1338,96 @@ async def analyze_ticket_v2(request: TicketRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Agent Performance Scorecard Endpoints  (Issue #774)
+# ---------------------------------------------------------------------------
+try:
+    from backend.services.agent_scorecard import (
+        get_agent_metrics,
+        compute_performance_score,
+        get_ai_coaching_tip,
+        get_company_scorecard,
+    )
+    _scorecard_available = True
+except ImportError as _sc_err:
+    print(f"[WARNING] Agent scorecard service unavailable: {_sc_err}")
+    _scorecard_available = False
+
+
+class AgentScorecardResponse(BaseModel):
+    agent_id: str
+    agent_name: str
+    metrics: dict
+    score: float
+    coaching_tip: str
+    insufficient_data: bool = False
+
+
+class CompanyScorecardResponse(BaseModel):
+    company_id: str
+    agents: list[dict]
+    generated_at: str
+
+
+@app.get("/api/scorecard/agent/{agent_id}", response_model=AgentScorecardResponse)
+async def get_agent_scorecard(
+    agent_id: str,
+    company_id: str,
+    days: int = 30,
+):
+    """
+    Return the performance scorecard for a single agent.
+    Scoped by company_id to enforce tenant isolation.
+    Auth-level check: the caller must pass their own agent_id (enforced on frontend).
+    """
+    if not _scorecard_available:
+        raise HTTPException(status_code=503, detail="Scorecard service unavailable.")
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not initialised.")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="company_id is required.")
+
+    metrics = get_agent_metrics(agent_id, company_id, supabase, days)
+    score = compute_performance_score(metrics)
+
+    if metrics.get("insufficient_data"):
+        coaching_tip = "Insufficient data — fewer than 1 ticket in the last 30 days."
+    else:
+        coaching_tip = get_ai_coaching_tip(
+            metrics.get("agent_name", "Agent"), metrics, score, gemini_service
+        )
+
+    return AgentScorecardResponse(
+        agent_id=agent_id,
+        agent_name=metrics.get("agent_name", "Unknown"),
+        metrics=metrics,
+        score=score,
+        coaching_tip=coaching_tip,
+        insufficient_data=metrics.get("insufficient_data", False),
+    )
+
+
+@app.get("/api/scorecard/company/{company_id}", response_model=CompanyScorecardResponse)
+async def get_company_scorecard_endpoint(
+    company_id: str,
+    days: int = 30,
+):
+    """
+    Return the full ranked agent leaderboard for a company.
+    Intended for admins only (role-based enforcement on the frontend).
+    """
+    if not _scorecard_available:
+        raise HTTPException(status_code=503, detail="Scorecard service unavailable.")
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not initialised.")
+
+    scorecards = get_company_scorecard(company_id, supabase, gemini_service, days)
+
+    return CompanyScorecardResponse(
+        company_id=company_id,
+        agents=scorecards,
+        generated_at=datetime.datetime.utcnow().isoformat() + "Z",
+    )
+
