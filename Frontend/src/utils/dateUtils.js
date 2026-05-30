@@ -1,47 +1,63 @@
 /**
  * Unified Date Utility for HELPDESK.AI
- * Fixes timezone shift issues by explicitly forcing local display.
+ * Compatible with Safari, Firefox, and Chrome.
+ * Fixes Safari ISO-8601 parsing issues by normalizing date strings.
  */
 
-export const formatTimelineDate = (dateStr) => {
-    if (!dateStr) return null;
-    
-    // Ensure the date string is interpreted as UTC if it's an ISO string from DB
-    let date;
-    if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
-        // If it's a raw string without TZ, assume it was intended as UTC from our backend
-        date = new Date(dateStr + 'Z');
-    } else {
-        date = new Date(dateStr);
+/**
+ * Normalize a date string for Safari compatibility.
+ * Safari fails to parse "YYYY-MM-DDTHH:MM:SS" (no TZ, no 'Z').
+ * This converts it to a format Safari understands.
+ */
+const normalizeDateString = (dateStr) => {
+  if (!dateStr) return null;
+
+  // If it already has timezone info, return as-is
+  if (dateStr.includes('Z') || dateStr.includes('+') || dateStr.includes('T')) {
+    // Replace "YYYY-MM-DDTHH:MM:SS" with "YYYY-MM-DDTHH:MM:SSZ" if no TZ
+    if (dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      return dateStr + 'Z';
     }
+    return dateStr;
+  }
 
-    if (isNaN(date.getTime())) return 'Invalid Date';
+  // Raw date without time - assume UTC
+  return dateStr + 'T00:00:00Z';
+};
 
-    // Using the browser's default locale and timeZone (which is the user's local)
-    return date.toLocaleString(undefined, {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+export const formatTimelineDate = (dateStr) => {
+  const normalized = normalizeDateString(dateStr);
+  if (!normalized) return null;
+
+  const date = new Date(normalized);
+  if (isNaN(date.getTime())) return 'Invalid Date';
+
+  return date.toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
 };
 
 export const getTimeZoneAbbr = () => {
-    try {
-        return new Intl.DateTimeFormat('en-US', {
-            timeZoneName: 'short'
-        })
+  try {
+    return (
+      new Intl.DateTimeFormat('en-US', {
+        timeZoneName: 'short',
+      })
         .formatToParts(new Date())
-        .find(part => part.type === 'timeZoneName')?.value || 'IST';
-    } catch (_e) {
-        return 'IST';
-    }
+        .find((part) => part.type === 'timeZoneName')?.value || 'UTC'
+    );
+  } catch (_e) {
+    return 'UTC';
+  }
 };
 
 export const formatFullTimestamp = (dateStr) => {
-    const formatted = formatTimelineDate(dateStr);
-    if (!formatted) return 'Processing...';
-    return `${formatted} (${getTimeZoneAbbr()})`;
+  const formatted = formatTimelineDate(dateStr);
+  if (!formatted) return 'Processing...';
+  return `${formatted} (${getTimeZoneAbbr()})`;
 };
