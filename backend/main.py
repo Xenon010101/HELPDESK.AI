@@ -318,7 +318,7 @@ async def custom_swagger_ui_html():
         <div id="swagger-ui"></div>
         <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
         <script>
-            SwaggerUIBundle({{
+            const ui = SwaggerUIBundle({{
                 url: '/openapi.json',
                 dom_id: '#swagger-ui',
                 presets: [
@@ -331,6 +331,7 @@ async def custom_swagger_ui_html():
                 filter: true,
                 syntaxHighlight: {{ theme: "monokai" }}
             }});
+            window._swaggerUi = ui;
         </script>
         <script>{SWAGGER_UI_CUSTOM_JS}</script>
     </body>

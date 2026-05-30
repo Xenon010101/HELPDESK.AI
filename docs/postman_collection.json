@@ -71,18 +71,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/tickets?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                }
-              ]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets"
+              ],
+              "query": []
             },
             "description": "Retrieve a paginated list of all tickets."
           }
@@ -119,8 +114,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/tickets/search?q=login",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "search"
+              ],
               "query": [
                 {
                   "key": "q",
@@ -165,7 +165,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"subject\": \"Login issue\", \"description\": \"Cannot login to the application\"}"
+              "raw": "{\"text\": \"Login issue Cannot login to the application\"}"
             },
             "description": "Analyze a ticket using AI to classify, extract entities, and detect duplicates."
           }

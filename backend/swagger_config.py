@@ -292,6 +292,22 @@ document.addEventListener('DOMContentLoaded', function() {
             </select>
         `;
         topbar.appendChild(envSelector);
+
+        // Add change handler to switch API server
+        const selector = envSelector.querySelector('#env-selector');
+        const envUrls = {
+            local: window.location.origin,
+            staging: 'https://staging-api.helpdesk.ai',
+            production: 'https://api.helpdesk.ai'
+        };
+        selector.addEventListener('change', function() {
+            const env = this.value;
+            const baseUrl = envUrls[env] || envUrls.local;
+            if (window._swaggerUi) {
+                window._swaggerUi.specActions.updateUrl(baseUrl + '/openapi.json');
+                window._swaggerUi.specActions.download();
+            }
+        });
     }
 });
 
