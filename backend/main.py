@@ -28,7 +28,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.encoders import jsonable_encoder
 import asyncio
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
 
 # Load environment variables from backend/.env
@@ -90,6 +90,13 @@ class TicketRequest(BaseModel):
     image_url: str | None = None
     confidence_threshold: float = 0.20
     duplicate_sensitivity: float = 0.85
+
+    @field_validator('confidence_threshold', 'duplicate_sensitivity')
+    @classmethod
+    def validate_range(cls, v):
+        if v < 0.0 or v > 1.0:
+            raise ValueError('Must be between 0.0 and 1.0')
+        return v
 
 class TicketSaveRequest(BaseModel):
     user_id: str
