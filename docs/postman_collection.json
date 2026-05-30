@@ -57,7 +57,7 @@
               "mode": "raw",
               "raw": "{\"email\": \"user@example.com\", \"password\": \"your_password\"}"
             },
-            "description": "Authenticate a user and receive a JWT token."
+            "description": "Authenticate a user and establish a session via cookies. Returns { user, message }."
           }
         }
       ]
@@ -237,7 +237,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"subject\": \"Login issue\", \"description\": \"Cannot login to the application\"}"
+              "raw": "{\"text\": \"Login issue: Cannot login to the application\", \"company\": \"acme\"}"
             },
             "description": "Check if a ticket is a duplicate of existing tickets."
           }
