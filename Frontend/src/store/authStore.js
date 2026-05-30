@@ -295,9 +295,24 @@ const useAuthStore = create(
                 // We keep profile persisted for quick UI transitions, 
                 // but session is handled by Supabase cookie/localStorage
                 profile: state.profile
-            }),
-        }
-    )
-);
-
-export default useAuthStore;
+           
+            signInWithGoogle: async () => {
+                set({ loading: true });
+                try {
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: window.location.origin + '/auth/callback',
+                            queryParams: { access_type: 'offline', prompt: 'consent' }
+                        }
+                    });
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('Google OAuth failed:', error.message);
+                    throw error;
+                } finally {
+                    set({ loading: false });
+                }
+            },
+)
