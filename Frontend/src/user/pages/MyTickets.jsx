@@ -122,6 +122,10 @@ function MyTickets() {
 
     return (
         <main className="flex-1 max-w-[1200px] w-full mx-auto px-6 py-10 flex flex-col gap-8">
+            {/* Live region for screen reader announcements */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only">
+                {filteredTickets.length > 0 && `Showing ${filteredTickets.length} tickets`}
+            </div>
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -145,6 +149,7 @@ function MyTickets() {
                     <input
                         type="text"
                         placeholder="Search tickets by ID or subject..."
+                        aria-label="Search tickets by ID or subject"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 font-medium"
@@ -154,6 +159,7 @@ function MyTickets() {
                     <Select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
+                        aria-label="Filter by status"
                         options={[
                             { value: 'All', label: 'All Statuses' },
                             { value: 'Resolved', label: 'Resolved' },
@@ -165,6 +171,7 @@ function MyTickets() {
                     <Select
                         value={priorityFilter}
                         onChange={(e) => setPriorityFilter(e.target.value)}
+                        aria-label="Filter by priority"
                         options={[
                             { value: 'All', label: 'All Priorities' },
                             { value: 'Critical', label: 'Critical' },
@@ -261,7 +268,7 @@ function MyTickets() {
                 // Table View
                 <Card className="border border-gray-100 rounded-2xl bg-white shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left whitespace-nowrap">
+                        <table className="w-full text-left whitespace-nowrap" role="table" aria-label="Support tickets">
                             <thead>
                                 <tr className="bg-gray-50/50 border-b border-gray-100">
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">ID</th>
