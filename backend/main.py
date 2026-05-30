@@ -1504,6 +1504,94 @@ async def websocket_endpoint(ws: WebSocket, company_id: str):
         print(f"[WS] Client disconnected — company_id={company_id}")
 
 
+# TicketUpdate restricts PATCH payloads to the fields a caller is permitted to
+# change. Ownership fields (owner_id), routing fields (assigned_team), and
+# system-set identifiers (ticket_id) are intentionally excluded.
+class TicketUpdate(BaseModel):
+    status: str | None = None
+    last_user_viewed_at: str | None = None
+
+
+@app.post("/tickets", response_model=dict)
+async def create_ticket(
+    ticket: TicketSaveRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Create a new ticket record in Supabase. Requires authentication.
+    The caller's authenticated user ID is always used as the owner; any
+    owner_id supplied in the request body is silently overridden to prevent
+    ownership spoofing.
+    """
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    user_id = _get_auth_user_id(current_user)
+    data = ticket.model_dump()
+    # Always derive ownership from the authenticated session.
+    data["user_id"] = user_id
+
+    profile = _get_authenticated_profile(current_user)
+    profile_company_id = profile.get("company_id")
+    if profile_company_id:
+        if data.get("company_id") and data["company_id"] != profile_company_id:
+            raise HTTPException(status_code=403, detail="User not authorized for this tenant")
+        data["company_id"] = profile_company_id
+    elif data.get("company_id"):
+        raise HTTPException(status_code=403, detail="User has no tenant assignment")
+
+    res = supabase.table("tickets").insert(data).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to create ticket")
+    return res.data[0]
+
+
+@app.patch("/tickets/{ticket_id}", response_model=dict)
+async def update_ticket(
+    ticket_id: str,
+    updates: TicketUpdate,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Partially update a ticket. Requires authentication. Only status and
+    last_user_viewed_at may be changed via this endpoint. The caller must
+    own the ticket or have a master admin role.
+    """
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    res = supabase.table("tickets").select("id, user_id, company_id").eq("id", ticket_id).single().execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    ticket_row = res.data
+    user_id = _get_auth_user_id(current_user)
+    profile = _get_authenticated_profile(current_user)
+
+    # Enforce ownership: caller must own the ticket or hold a master admin role.
+    if not _is_master_ticket_reader(profile) and str(ticket_row.get("user_id")) != user_id:
+        raise HTTPException(status_code=403, detail="User not authorized to update this ticket")
+
+    # Enforce company scope for non-master callers.
+    company_scope = _ticket_company_scope(profile)
+    if company_scope and ticket_row.get("company_id") != company_scope:
+        raise HTTPException(status_code=403, detail="User not authorized for this tenant")
+
+    patch_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+    if not patch_data:
+        raise HTTPException(status_code=400, detail="No updatable fields provided")
+
+    updated = (
+        supabase.table("tickets")
+        .update(patch_data)
+        .eq("id", ticket_id)
+        .execute()
+    )
+    if not updated.data:
+        raise HTTPException(status_code=500, detail="Failed to update ticket")
+    return updated.data[0]
+
+
 @app.get("/tickets/{ticket_id}")
 async def get_ticket_by_id(
     request: Request,
