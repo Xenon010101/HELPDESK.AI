@@ -900,7 +900,7 @@ async def readiness_check():
 # Weekly Digest endpoints
 # ---------------------------------------------------------------------------
 @app.post("/api/digest/send-now")
-async def send_digest_now():
+async def send_digest_now(current_user: dict = Depends(get_current_user)):
     """Manual trigger to send the weekly digest email."""
     from backend.services.digest_service import get_weekly_stats, generate_ai_summary, send_digest_email
     
@@ -950,7 +950,7 @@ class TroubleshootResponse(BaseModel):
     is_final: bool
 
 @app.post("/ai/troubleshoot", response_model=TroubleshootResponse)
-async def troubleshoot(request: TroubleshootRequest):
+async def troubleshoot(request: TroubleshootRequest, current_user: dict = Depends(get_current_user)):
     """Get dynamic troubleshooting steps from Gemini."""
     if not gemini_service or not gemini_service._initialized:
         return TroubleshootResponse(
@@ -977,7 +977,7 @@ class BugReportAnalysisResponse(BaseModel):
     probable_cause: str
 
 @app.post("/ai/analyze_bug", response_model=BugReportAnalysisResponse)
-async def analyze_bug(request: BugReportAnalysisRequest):
+async def analyze_bug(request: BugReportAnalysisRequest, current_user: dict = Depends(get_current_user)):
     """Analyze a bug report using Gemini to generate a Probable Cause."""
     if not gemini_service or not gemini_service._initialized:
         return BugReportAnalysisResponse(
@@ -1556,7 +1556,7 @@ async def get_ticket_sla_estimate(
 
 
 @app.get("/tickets/{ticket_id}/audit_logs", response_model=list[AuditLogRecord])
-async def get_ticket_audit_logs(ticket_id: str, company_id: str):
+async def get_ticket_audit_logs(ticket_id: str, company_id: str, current_user: dict = Depends(get_current_user)):
     """Return a company-scoped chronological audit trail for a ticket."""
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
@@ -1866,7 +1866,7 @@ async def analyze_only(request_body: TicketRequest, request: Request):
     )
 
 @app.post("/ai/analyze_stream")
-async def analyze_stream(request_body: TicketRequest):
+async def analyze_stream(request_body: TicketRequest, current_user: dict = Depends(get_current_user)):
     """
     REAL-TIME SSE ENDPOINT: Streams the AI progress to the frontend dynamically.
     """
@@ -2029,7 +2029,7 @@ async def analyze_stream(request_body: TicketRequest):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/ai/analyze_ticket/legacy")
-async def legacy_analyze_and_save(request_body: TicketRequest):
+async def legacy_analyze_and_save(request_body: TicketRequest, current_user: dict = Depends(get_current_user)):
     """
     BACKWARD COMPATIBILITY: Strictly performs analysis only. 
     Does NOT persist to DB to avoid foreign key violations.
@@ -2037,7 +2037,7 @@ async def legacy_analyze_and_save(request_body: TicketRequest):
     return await analyze_only(request_body)
 
 @app.post("/ai/analyze-v2")
-async def analyze_ticket_v2(request: TicketRequest):
+async def analyze_ticket_v2(request: TicketRequest, current_user: dict = Depends(get_current_user)):
     text = request.text
     try:
         prediction = classifier_v2.predict(text)
@@ -2069,7 +2069,7 @@ class SLAStatsResponse(BaseModel):
 
 
 @app.get("/sla/stats", response_model=SLAStatsResponse)
-async def sla_stats():
+async def sla_stats(current_user: dict = Depends(get_current_user)):
     """Get aggregated SLA dashboard statistics across all tickets."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -2102,6 +2102,7 @@ async def sla_tickets(
     priority: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     List tickets with SLA status. Filter by sla_status and/or priority.
@@ -2141,7 +2142,7 @@ class EscalationLogEntry(BaseModel):
 
 
 @app.get("/sla/escalations")
-async def sla_escalations(limit: int = 50, offset: int = 0):
+async def sla_escalations(limit: int = 50, offset: int = 0, current_user: dict = Depends(get_current_user)):
     """Fetch escalation log history."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -2172,7 +2173,7 @@ class SLAPolicyInfo(BaseModel):
 
 
 @app.get("/sla/policies")
-async def sla_policies():
+async def sla_policies(current_user: dict = Depends(get_current_user)):
     """Get configured SLA policies."""
     if not supabase:
         # Return defaults from code
@@ -2198,7 +2199,7 @@ async def sla_policies():
 
 
 @app.post("/sla/check")
-async def trigger_sla_check():
+async def trigger_sla_check(current_user: dict = Depends(get_current_user)):
     """Manually trigger an SLA evaluation cycle (admin)."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -2218,6 +2219,7 @@ async def trigger_sla_check():
 async def check_duplicate_endpoint(
     body: TicketRequest,
     company_id: str | None = None,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Check a ticket text for potential duplicates using semantic vector search.
@@ -2237,14 +2239,14 @@ async def check_duplicate_endpoint(
 
 
 @app.post("/ai/reindex_embeddings")
-async def reindex_embeddings():
+async def reindex_embeddings(current_user: dict = Depends(get_current_user)):
     """Re-generate vector embeddings for all tickets."""
     result = await semantic_dupe_service.reindex_all()
     return result
 
 
 @app.get("/system/settings")
-async def get_system_settings_endpoint():
+async def get_system_settings_endpoint(current_user: dict = Depends(get_current_user)):
     """Fetch all system settings."""
     _logger = logging.getLogger(__name__)
     if not supabase:
@@ -2261,7 +2263,7 @@ async def get_system_settings_endpoint():
 
 
 @app.patch("/system/settings")
-async def update_system_settings(body: dict):
+async def update_system_settings(body: dict, current_user: dict = Depends(get_current_user)):
     """Update a specific system setting."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -2281,7 +2283,7 @@ async def update_system_settings(body: dict):
 
 
 @app.get("/sla/tickets/{ticket_id}")
-async def sla_ticket_detail(ticket_id: str):
+async def sla_ticket_detail(ticket_id: str, current_user: dict = Depends(get_current_user)):
     """Get detailed SLA info for a specific ticket."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not connected")
