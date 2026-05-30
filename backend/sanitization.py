@@ -75,7 +75,9 @@ def _remove_html_tags(text: str) -> str:
 
     class _TagStripper(HTMLParser):
         def __init__(self):
-            super().__init__()
+            # convert_charrefs=False prevents decoding &lt;script&gt; back to
+            # <script>, which would reactivate XSS payloads.
+            super().__init__(convert_charrefs=False)
             self.parts = []
 
         def handle_data(self, data):
