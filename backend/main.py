@@ -99,6 +99,7 @@ class TicketRequest(BaseModel):
             return v
         # Strip data URI prefix if present
         raw = v
+        has_mime = False
         if "," in v:
             prefix, raw = v.split(",", 1)
             # Validate MIME type from data URI
@@ -108,7 +109,8 @@ class TicketRequest(BaseModel):
                 raise ValueError(
                     f"Unsupported file type '{mime}'. Allowed: PNG, JPEG, TIFF, PDF"
                 )
-        # Validate decoded size (max 10MB)
+            has_mime = bool(mime)
+        # Validate decoded size (max 10MB) and check magic bytes
         try:
             missing_padding = len(raw) % 4
             if missing_padding:
@@ -119,10 +121,24 @@ class TicketRequest(BaseModel):
                 raise ValueError(
                     f"File size {len(decoded) / 1024 / 1024:.1f}MB exceeds 10MB limit"
                 )
+            # Magic byte validation for raw base64 without data: prefix
+            if not has_mime and len(decoded) >= 4:
+                magic = decoded[:4]
+                allowed_magics = (
+                    b"\x89PNG",        # PNG
+                    b"\xff\xd8\xff", # JPEG
+                    b"II\x2a\x00",   # TIFF (little-endian)
+                    b"MM\x00\x2a",   # TIFF (big-endian)
+                    b"%PDF",           # PDF
+                )
+                if not any(magic.startswith(m) for m in allowed_magics):
+                    raise ValueError(
+                        "Unrecognized file type. Allowed: PNG, JPEG, TIFF, PDF"
+                    )
         except Exception as e:
-            if "exceeds" in str(e) or "Unsupported" in str(e):
+            if "exceeds" in str(e) or "Unsupported" in str(e) or "Unrecognized" in str(e):
                 raise
-            raise ValueError("Invalid base64 image data")
+            raise ValueError("Invalid base64 image data") from e
         return v
 
 class TicketSaveRequest(BaseModel):
