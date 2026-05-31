@@ -137,12 +137,13 @@ function MyTickets() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Ticket className="text-emerald-600 w-8 h-8" /> My Tickets
+                        <Ticket className="text-emerald-600 w-8 h-8" aria-hidden="true" /> My Tickets
                     </h1>
                     <p className="text-gray-500 font-medium mt-1">Manage and track your support requests</p>
                 </div>
                 <button
                     onClick={() => navigate('/create-ticket')}
+                    aria-label="Create a new support ticket"
                     className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                     Create New Ticket
@@ -152,7 +153,7 @@ function MyTickets() {
             {/* Toolbar section */}
             <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" aria-hidden="true" />
                     <input
                         type="text"
                         placeholder="Search tickets by ID or subject..."
@@ -193,7 +194,7 @@ function MyTickets() {
             {/* Main Content */}
 
             {loading ? (
-                <Card className="border border-gray-100 rounded-2xl bg-white shadow-sm overflow-hidden p-6 w-full">
+                <Card className="border border-gray-100 rounded-2xl bg-white shadow-sm overflow-hidden p-6 w-full" role="status" aria-label="Loading tickets">
                     <div className="space-y-6">
                         <style>{`@keyframes shimmer{100%{transform:translateX(100%)}}`}</style>
                         <div className="flex items-center gap-4 border-b border-gray-50 pb-4">
@@ -226,8 +227,8 @@ function MyTickets() {
                     </div>
                 </Card>
             ) : error ? (
-                <Card className="p-8 border-red-100 bg-red-50/50 rounded-2xl flex flex-col items-center text-center">
-                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                <Card className="p-8 border-red-100 bg-red-50/50 rounded-2xl flex flex-col items-center text-center" role="alert" aria-live="assertive">
+                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" aria-hidden="true" />
                     <h3 className="text-lg font-bold text-red-900 mb-1">Database Sync Error</h3>
                     <p className="text-red-700/70 text-sm max-w-sm mb-6">{error}</p>
                     <button
@@ -239,9 +240,9 @@ function MyTickets() {
                 </Card>
             ) : tickets.length === 0 ? (
                 // True Empty State
-                <Card className="flex flex-col items-center justify-center py-20 text-center border-dashed border-2 border-gray-200 bg-transparent shadow-none rounded-2xl">
+                <Card className="flex flex-col items-center justify-center py-20 text-center border-dashed border-2 border-gray-200 bg-transparent shadow-none rounded-2xl" role="status">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <Inbox className="text-gray-400 w-8 h-8" />
+                        <Inbox className="text-gray-400 w-8 h-8" aria-hidden="true" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-800 mb-1">No tickets yet</h3>
                     <p className="text-gray-500 max-w-sm mb-8">
@@ -256,8 +257,8 @@ function MyTickets() {
                 </Card>
             ) : filteredTickets.length === 0 ? (
                 // Filter Empty State
-                <Card className="flex flex-col items-center justify-center py-16 text-center border border-gray-100 shadow-sm rounded-2xl bg-white">
-                    <Filter className="text-gray-300 w-12 h-12 mb-4" />
+                <Card className="flex flex-col items-center justify-center py-16 text-center border border-gray-100 shadow-sm rounded-2xl bg-white" role="status">
+                    <Filter className="text-gray-300 w-12 h-12 mb-4" aria-hidden="true" />
                     <h3 className="text-lg font-bold text-gray-900 mb-1">No matching tickets found</h3>
                     <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filters.</p>
                     <button
@@ -278,13 +279,13 @@ function MyTickets() {
                         <table className="w-full text-left whitespace-nowrap" role="table" aria-label="Support tickets">
                             <thead>
                                 <tr className="bg-gray-50/50 border-b border-gray-100">
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">ID</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Subject</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Category</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Status</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Priority</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Est. SLA</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Submitted</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">ID</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Subject</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Category</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Status</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Priority</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Est. SLA</th>
+                                    <th scope="col" className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Submitted</th>
                                 </tr>
                             </thead>
                             <TooltipProvider delayDuration={300}>
@@ -293,7 +294,12 @@ function MyTickets() {
                                         <tr
                                             key={ticket.id}
                                             onClick={() => navigate(`/ticket/${ticket.id}`)}
-                                            className="group hover:bg-emerald-50/30 transition-colors cursor-pointer"
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/ticket/${ticket.id}`); } }}
+                                            tabIndex={0}
+                                            role="row"
+                                            aria-rowindex={filteredTickets.indexOf(ticket) + 2}
+                                            aria-label={`Ticket ${formatTicketId(ticket.id)}: ${ticket.subject || ticket.summary || 'No subject'}, Status: ${ticket.status || 'open'}, Priority: ${ticket.priority || 'medium'}`}
+                                            className="group hover:bg-emerald-50/30 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-inset"
                                         >
                                             <td className="px-6 py-4">
                                                 <Tooltip>
