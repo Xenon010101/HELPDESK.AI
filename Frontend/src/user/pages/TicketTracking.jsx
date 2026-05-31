@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    Activity, CheckCircle2, ShieldCheck, User,
-    Clock, ArrowRight, Loader2, FileText, Zap
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Activity, CheckCircle2, ShieldCheck, Clock, Loader2, ArrowRight } from 'lucide-react';
 import useTicketStore from "../../store/ticketStore";
 import useAuthStore from "../../store/authStore";
 import { Card, CardContent } from "../../components/ui/card";
@@ -20,6 +18,7 @@ const TicketTracking = () => {
     const [error, setError] = useState(null);
     const [createdTicket, setCreatedTicket] = useState(null);
     const hasCreated = useRef(false);
+
     useEffect(() => {
         if (!aiTicket) {
             navigate('/create-ticket');
@@ -33,11 +32,9 @@ const TicketTracking = () => {
             hasCreated.current = true;
 
             try {
-                // Determine the correct status
                 const isAutoResolved = aiTicket.auto_resolve || false;
                 const status = isAutoResolved ? 'auto_resolved' : 'pending_human';
 
-                // Map AI Analysis into the TicketSaveRequest format
                 const savePayload = {
                     user_id: user?.id,
                     subject: aiTicket.summary,
@@ -53,7 +50,6 @@ const TicketTracking = () => {
                     image_url: aiTicket.image_url || null,
                     company: profile?.company || "System",
                     company_id: profile?.company_id || null,
-                    sla_breach_at: aiTicket.sla_breach_at,
                     metadata: {
                         confidence: aiTicket.confidence,
                         entities: aiTicket.entities,
@@ -76,7 +72,6 @@ const TicketTracking = () => {
                     setCreatedTicket(newTicket);
                     setIsCreating(false);
 
-                    // Redirect to the detail page after a short confirmation pause
                     setTimeout(() => {
                         navigate(`/ticket/${res.data.ticket_id}`);
                     }, 2500);
@@ -96,65 +91,73 @@ const TicketTracking = () => {
     if (!aiTicket) return null;
 
     return (
-        <div className="min-h-screen bg-[#f6f8f7] flex flex-col items-center justify-center px-6">
-            <div className="w-full max-w-[500px] text-center space-y-8">
-
-                {/* Animation Section */}
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 font-sans">
+            <div className="w-full max-w-lg text-center space-y-8">
+                
+                {/* Visual Status Node */}
                 <div className="relative inline-block">
-                    <div className="absolute inset-0 bg-emerald-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                    <div className="relative w-24 h-24 bg-white rounded-3xl shadow-xl shadow-emerald-900/5 border border-emerald-50 flex items-center justify-center mx-auto">
+                    <div className="absolute inset-0 bg-emerald-500/20 blur-[50px] rounded-full animate-pulse" />
+                    <motion.div 
+                        className="relative w-32 h-32 bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl rounded-[2rem] flex items-center justify-center shadow-2xl"
+                        animate={{ scale: isCreating ? [1, 1.05, 1] : 1 }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                    >
                         {isCreating ? (
-                            <Activity className="w-10 h-10 text-emerald-600 animate-spin" />
+                            <Loader2 className="w-12 h-12 text-emerald-400 animate-spin" />
                         ) : error ? (
-                            <Clock className="w-10 h-10 text-red-500" />
+                            <Clock className="w-12 h-12 text-rose-500" />
                         ) : (
-                            <CheckCircle2 className="w-10 h-10 text-emerald-600 animate-bounce" />
+                            <CheckCircle2 className="w-12 h-12 text-emerald-400" />
                         )}
-                    </div>
+                    </motion.div>
                 </div>
 
+                {/* State Text */}
                 <div className="space-y-3">
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                        {isCreating ? "Escalating to Specialists" : error ? "Something went wrong" : "Successfully Escalated"}
+                    <h1 className="text-2xl font-black text-white tracking-tight font-syne uppercase italic">
+                        {isCreating ? "Escalating to Specialists" : error ? "Exception Detected" : "Successfully Indexed"}
                     </h1>
-                    <p className="text-gray-500 font-medium leading-relaxed">
+                    <p className="text-slate-400 font-medium text-sm leading-relaxed max-w-sm mx-auto">
                         {isCreating
-                            ? `We're assigning your ${aiTicket.category || 'support'} request to the right team.`
+                            ? `We're assigning your ${aiTicket.category || 'support'} request to the correct neural routing node.`
                             : error
                                 ? error
-                                : "Your ticket has been created and assigned. Redirecting to tracking..."
+                                : "Your ticket payload has been successfully mapped. Redirecting to tracking interface..."
                         }
                     </p>
                 </div>
 
-                {/* Dynamic Status Steps — shows real AI data */}
-                <Card className="rounded-2xl border border-gray-100 shadow-sm bg-white overflow-hidden text-left">
-                    <CardContent className="p-6 space-y-5">
-                        <div className="flex items-center gap-4 text-emerald-600 font-bold text-sm">
+                {/* Pipeline Progress Monitor */}
+                <Card className="rounded-[2.5rem] border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-8 overflow-hidden shadow-2xl">
+                    <CardContent className="p-0 space-y-6">
+                        <div className="flex items-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-widest">
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>AI Analysis Complete</span>
-                            <span className="ml-auto text-[10px] font-bold text-gray-300 uppercase tracking-wider">
-                                {aiTicket.category || 'General'}
-                            </span>
+                            <span>AI Analysis Phase Complete</span>
+                            <span className="ml-auto text-slate-500">{aiTicket.category || 'General'}</span>
                         </div>
-                        <div className={`flex items-center gap-4 text-sm font-bold ${isCreating ? 'text-gray-400' : error ? 'text-red-500' : 'text-emerald-600'}`}>
-                            {isCreating ? <Loader2 className="w-4 h-4 animate-spin text-emerald-500" /> : error ? <Clock className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                            <span>{error ? 'Failed to create ticket' : 'Creating Support Ticket'}</span>
-                        </div>
-                        <div className={`flex items-center gap-4 text-sm font-bold ${createdTicket ? 'text-emerald-600' : 'text-gray-400'}`}>
-                            {createdTicket ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                            <span>
-                                {createdTicket
-                                    ? `Assigned → ${createdTicket.assigned_team}`
-                                    : 'Agent Assignment Pending'}
-                            </span>
+                        
+                        <div className="space-y-4">
+                            <div className={`flex items-center gap-4 text-[10px] font-black uppercase tracking-widest ${isCreating ? 'text-slate-500' : error ? 'text-rose-500' : 'text-emerald-400'}`}>
+                                {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : error ? <Clock className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                                <span>{error ? 'Submission Fault' : 'Creating Support Ticket'}</span>
+                            </div>
+                            
+                            <div className={`flex items-center gap-4 text-[10px] font-black uppercase tracking-widest ${createdTicket ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                {createdTicket ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                <span>{createdTicket ? `Routed to ${createdTicket.assigned_team}` : 'Agent Assignment Pending'}</span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Dynamic Ticket Timeline — passes the REAL ticket with Supabase data */}
-                {createdTicket && <TicketTimeline ticket={createdTicket} />}
-
+                {/* Dynamic Timeline */}
+                <AnimatePresence>
+                    {createdTicket && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <TicketTimeline ticket={createdTicket} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
