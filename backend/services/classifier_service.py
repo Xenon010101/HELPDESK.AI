@@ -6,6 +6,7 @@ Priority and other fields are derived from the category mapping.
 
 import os
 import json
+import time
 try:
     import torch
     import torch.nn.functional as F
@@ -135,22 +136,21 @@ class ClassifierService:
             input_ids = encoding["input_ids"].to(DEVICE)
             attention_mask = encoding["attention_mask"].to(DEVICE)
 
-        import time
-        _t0 = time.perf_counter()
-        try:
-            with torch.no_grad():
-                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-                logits = outputs.logits
-                probs = F.softmax(logits, dim=1)
-                confidence, pred_idx = torch.max(probs, dim=1)
-        except Exception:
+            _t0 = time.perf_counter()
+            try:
+                with torch.no_grad():
+                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                    logits = outputs.logits
+                    probs = F.softmax(logits, dim=1)
+                    confidence, pred_idx = torch.max(probs, dim=1)
+            except Exception:
+                if _METRICS_ENABLED:
+                    CLASSIFIER_REQUESTS.labels(model="distilbert", status="error").inc()
+                raise
             if _METRICS_ENABLED:
-                CLASSIFIER_REQUESTS.labels(model="distilbert", status="error").inc()
-            raise
-        if _METRICS_ENABLED:
-            CLASSIFIER_LATENCY.labels(model="distilbert").observe(time.perf_counter() - _t0)
-            CLASSIFIER_REQUESTS.labels(model="distilbert", status="ok").inc()
-            CLASSIFIER_TOKENS.labels(model="distilbert").inc(int(attention_mask.sum().item()))
+                CLASSIFIER_LATENCY.labels(model="distilbert").observe(time.perf_counter() - _t0)
+                CLASSIFIER_REQUESTS.labels(model="distilbert", status="ok").inc()
+                CLASSIFIER_TOKENS.labels(model="distilbert").inc(int(attention_mask.sum().item()))
 
             pred_idx = pred_idx.item()
             confidence = round(confidence.item(), 4)
@@ -176,7 +176,7 @@ class ClassifierService:
                 "Software": ["crash", "load", "website", "application", "error", "bug", "failing", "software", "SQL", "Cluster", "Database", "Production", "Latency"],
                 "Access": ["login", "password", "access", "authentication", "account", "permission", "MFA", "OAuth"]
             }
-            
+
             lower_text = text.lower()
             for cat, keywords in tech_keywords.items():
                 if any(k.lower() in lower_text for k in keywords):
@@ -185,10 +185,9 @@ class ClassifierService:
                         category = cat
                         assigned_team = TEAM_MAP.get(cat, "General Support")
                         # Boost confidence significantly for verified technical signals
-                        confidence = max(confidence, 0.92) 
+                        confidence = max(confidence, 0.92)
                         break
 
-            MODEL_PREDICTIONS_TOTAL.labels(status="success").inc()
             return {
                 "category": category,
                 "subcategory": subcategory,
@@ -198,8 +197,6 @@ class ClassifierService:
                 "confidence": confidence,
             }
         except Exception as e:
-            MODEL_PREDICTIONS_TOTAL.labels(status="failure").inc()
             raise e
         finally:
             duration = time.time() - start_time
-            MODEL_PREDICTION_LATENCY.observe(duration)
