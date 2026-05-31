@@ -99,9 +99,9 @@ export const getTimeZoneAbbr = () => {
             timeZoneName: 'short'
         })
         .formatToParts(new Date())
-        .find(part => part.type === 'timeZoneName')?.value || 'IST';
+        .find(part => part.type === 'timeZoneName')?.value || 'UTC';
     } catch (_e) {
-        return 'IST';
+        return 'UTC';
     }
 };
 
