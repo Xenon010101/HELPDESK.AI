@@ -8,6 +8,7 @@ const actions = [
         title: "Network Issues",
         description: "Connectivity problems, VPN access, and slow internet.",
         category: "Network",
+        templateId: "vpn-connectivity",
         icon: Network,
         color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
         hoverColor: "group-hover:border-emerald-500/40",
@@ -16,6 +17,7 @@ const actions = [
         title: "Software Problems",
         description: "Application crashes, license issues, and installations.",
         category: "Software",
+        templateId: "software-installation",
         icon: Laptop,
         color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
         hoverColor: "group-hover:border-blue-500/40",
@@ -24,6 +26,7 @@ const actions = [
         title: "Access Requests",
         description: "Permission changes, new account setup, and MFA.",
         category: "Access",
+        templateId: "password-reset",
         icon: ShieldCheck,
         color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
         hoverColor: "group-hover:border-purple-500/40",
@@ -33,8 +36,8 @@ const actions = [
 const QuickActions = () => {
     const navigate = useNavigate();
 
-    const handleActionClick = (category) => {
-        navigate("/create-ticket", { state: { prefilledCategory: category } });
+    const handleActionClick = (action) => {
+        navigate("/create-ticket", { state: { templateId: action.templateId, prefilledCategory: action.category } });
     };
 
     return (

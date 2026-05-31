@@ -59,6 +59,10 @@ const Dashboard = () => {
       }
     };
     fetchTickets();
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/gssoc
   }, []);
 
   useEffect(() => {
@@ -76,6 +80,10 @@ const Dashboard = () => {
     });
 
     prevTicketsRef.current = tickets;
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/gssoc
   }, [tickets]);
 
   const totalTickets = tickets.length;

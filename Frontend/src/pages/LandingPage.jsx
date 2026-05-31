@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-    Menu, X, Check, Activity,
+    Menu, X, Check, Activity, Moon, Sun,
     MapPin, AlertCircle, Folder, Zap, Bot, ArrowRight,
     Clock, CheckCircle,
     Star, Twitter, Linkedin, Github, Globe, MessageSquare,
@@ -148,7 +148,7 @@ export default function LandingPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-white font-sans text-slate-800">
+        <div className="min-h-screen bg-white dark:bg-gray-900 font-sans text-slate-800 dark:text-white">
             {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
 
             <Header setShowDemo={setShowDemo} />

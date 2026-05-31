@@ -27,6 +27,7 @@ function useDiagnostics() {
             screen: screenInfo
         }));
 
+<<<<<<< HEAD
         const originalConsoleError = console.error;
         console.error = function (...args) {
             setDiagnostics(prev => ({
@@ -36,6 +37,9 @@ function useDiagnostics() {
             originalConsoleError.apply(console, args);
         };
 
+=======
+        // Global Error Listener
+>>>>>>> upstream/gssoc
         const handleError = (e) => {
             setDiagnostics(prev => ({
                 ...prev,
@@ -45,7 +49,6 @@ function useDiagnostics() {
         window.addEventListener('error', handleError);
 
         return () => {
-            console.error = originalConsoleError;
             window.removeEventListener('error', handleError);
         };
     }, []);
@@ -201,6 +204,8 @@ const BugReportWidget = ({ advanced = false, customTrigger = null }) => {
 
             const canvas = await html2canvas(document.body, {
                 useCORS: true,
+                allowTaint: false,
+                backgroundColor: null,
                 logging: false,
                 x: left + window.scrollX,
                 y: top + window.scrollY,
@@ -387,7 +392,11 @@ const BugReportWidget = ({ advanced = false, customTrigger = null }) => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 15, scale: 0.98 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
+<<<<<<< HEAD
                             className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-2xl relative z-50 my-auto border border-slate-100 dark:border-white/[0.08] flex flex-col max-h-[85vh] overflow-hidden"
+=======
+                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl relative z-50 my-auto border border-slate-100 dark:border-gray-700 flex flex-col max-h-[90vh]"
+>>>>>>> upstream/gssoc
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/[0.05] shrink-0">
@@ -395,7 +404,11 @@ const BugReportWidget = ({ advanced = false, customTrigger = null }) => {
                                     <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                                         <Bug className="w-5 h-5" />
                                     </div>
+<<<<<<< HEAD
                                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight font-syne">Report a System Bug</h2>
+=======
+                                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">Report a Bug</h2>
+>>>>>>> upstream/gssoc
                                 </div>
                                 <button
                                     onClick={handleClose}
@@ -610,8 +623,13 @@ const BugReportWidget = ({ advanced = false, customTrigger = null }) => {
                                 </form>
                             </div>
 
+<<<<<<< HEAD
                             {/* Sticky Modal Action Footer */}
                             <div className="p-5 border-t border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02] rounded-b-2xl shrink-0 flex justify-end gap-3.5">
+=======
+                            {/* Footer */}
+                            <div className="p-5 border-t border-slate-100 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 rounded-b-2xl shrink-0 flex justify-end gap-3">
+>>>>>>> upstream/gssoc
                                 <button
                                     type="button"
                                     onClick={handleClose}

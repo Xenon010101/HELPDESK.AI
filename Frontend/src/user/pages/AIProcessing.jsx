@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, ShieldAlert, Cpu } from 'lucide-react';
@@ -50,7 +51,6 @@ const AIProcessing = () => {
             let uploadedImageUrl = null;
 
             try {
-                // ── Image Telemetry Upload ──
                 if (image_base64) {
                     try {
                         const base64Data = image_base64.split(',')[1] || image_base64;
@@ -149,7 +149,6 @@ const AIProcessing = () => {
 
                 if (!finalTicket) throw new Error("EMPTY_PAYLOAD");
 
-                // Frontend LLM enhancement loop
                 try {
                     const aiResult = await analyzeTicketWithAI(text, image_text, image_base64);
                     finalTicket.summary = aiResult.summary || finalTicket.summary;
@@ -180,10 +179,8 @@ const AIProcessing = () => {
                 setTimeout(() => navigate('/ai-understanding'), 1200);
 
             } catch (error) {
-                console.error("[AIProcessing] Logic exception:", error);
-                
-                // Autonomous Fallback Logic
-                console.warn("[AIProcessing] Shifting to local heuristic fallback.");
+                console.error("[AIProcessing] Analysis Failed:", error);
+                console.warn("[AIProcessing] Backend unreachable or preparing. Using local fallback.");
 
                 let summary = (text.charAt(0).toUpperCase() + text.slice(1)).substring(0, 100) + (text.length > 100 ? '…' : '');
                 let image_description = "";
@@ -219,9 +216,22 @@ const AIProcessing = () => {
                     image_url: uploadedImageUrl || null
                 });
 
-                setTimeout(() => navigate('/ai-understanding'), 800);
+                setTimeout(() => navigate('/ai-understanding'), 500);
             }
         };
+
+        analyzeTicket();
+    }, [text, image_text, image_base64, navigate, setAITicket, settings, user, profile, showToast, template_id, template_used, user_modified, ticket_title, original_text, original_language]);
+
+    useEffect(() => {
+        if (!text) {
+            console.warn("[AIProcessing] No ticket text found. Redirecting to /create-ticket");
+            navigate('/create-ticket');
+            return;
+        }
+
+        if (hasCalledAPI.current) return;
+        hasCalledAPI.current = true;
 
         analyzeTicket();
     }, [text, image_text, image_base64, navigate, setAITicket, settings, user, profile]);
@@ -276,3 +286,4 @@ const AIProcessing = () => {
 };
 
 export default AIProcessing;
+

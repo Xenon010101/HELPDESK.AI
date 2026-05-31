@@ -5,7 +5,10 @@ import { Clock, Inbox, AlertCircle, ArrowRight } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTimelineDate } from '../../utils/dateUtils';
-import { Card, CardContent } from "../../components/ui/card";
+import LanguageBadge from '../../components/shared/LanguageBadge';
+import TagChip from '../../components/TagChip';
+import SLABadge from '../../admin/components/SLABadge';
+import { safeDisplayText } from '../../utils/sanitizeText';
 
 const RecentTickets = () => {
     const navigate = useNavigate();
@@ -46,157 +49,136 @@ const RecentTickets = () => {
 
     const getStatusBadge = (status) => {
         const s = String(status || '').toLowerCase();
-        const baseStyle = "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border inline-block whitespace-nowrap";
-        
+        const baseClasses = "inline-block rounded-full px-2.5 py-1 text-[11px] font-bold tracking-tight";
         switch (s) {
             case 'resolved':
             case 'resolved by human support':
-                return <span className={`${baseStyle} bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.1)]`}>Resolved</span>;
+                return <span className={`${baseClasses} bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/30`}>Resolved</span>;
             case 'pending':
             case 'pending human support':
             case 'pending_human':
-                return <span className={`${baseStyle} bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse`}>Pending</span>;
+                return <span className={`${baseClasses} bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/30`}>Pending</span>;
             case 'in progress':
-                return <span className={`${baseStyle} bg-blue-500/10 text-blue-400 border-blue-500/20`}>In Progress</span>;
+                return <span className={`${baseClasses} bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30`}>In Progress</span>;
             case 'open':
-                return <span className={`${baseStyle} bg-purple-500/10 text-purple-400 border-purple-500/20`}>Open</span>;
+                return <span className={`${baseClasses} bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/20`}>Open</span>;
             default:
-                return <span className={`${baseStyle} bg-white/5 text-slate-300 border-white/10`}>{status || 'Open'}</span>;
+                return <span className={`${baseClasses} bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/20`}>{status || 'Open'}</span>;
         }
     };
 
     return (
-        <Card className="p-0 overflow-hidden rounded-[2.5rem] border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-slate-900 shadow-sm dark:shadow-none text-left w-full">
-            {/* Header section layout */}
-            <div className="p-6 sm:px-8 border-b border-slate-150 dark:border-white/[0.05] flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-sm">
-                        <Clock size={16} />
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-white text-base tracking-tight font-syne">
+        <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-emerald-50 dark:border-slate-800 shadow-sm dark:shadow-slate-950/50 overflow-hidden">
+            {/* Header */}
+            <div className="px-7 py-5 border-b border-green-50 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
+                <div className="flex items-center gap-2">
+                    <Clock size={18} className="text-green-500 dark:text-green-400" />
+                    <span className="font-syne text-[17px] font-bold text-slate-900 dark:text-white">
                         Recent Tickets
                     </span>
                 </div>
                 <button
                     onClick={() => navigate('/my-tickets')}
-                    className="flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-transparent border-none cursor-pointer hover:text-emerald-500 dark:hover:text-emerald-300 group transition-colors p-1"
+                    className="bg-transparent border-none cursor-pointer text-green-600 dark:text-green-400 text-[13px] font-bold hover:text-green-700 dark:hover:text-green-300 transition-colors"
                 >
                     <span>View All</span>
                     <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                 </button>
             </div>
 
-            {/* Content Switcher Frame */}
-            <CardContent className="p-0">
-                <AnimatePresence mode="wait">
-                    {loading ? (
-                        /* Telemetry Data Loading Skeleton Frame */
-                        <motion.div 
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="p-6 sm:p-8 space-y-4"
-                        >
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 py-2 border-b border-slate-100 dark:border-white/[0.02] last:border-none">
-                                    <div className="h-4 w-12 bg-slate-100 dark:bg-white/5 rounded animate-pulse shrink-0" />
-                                    <div className="h-4 flex-1 bg-slate-100 dark:bg-white/5 rounded animate-pulse" />
-                                    <div className="h-6 w-20 bg-slate-100 dark:bg-white/5 rounded-full animate-pulse shrink-0" />
-                                </div>
-                            ))}
-                        </motion.div>
-                    ) : error ? (
-                        /* Network Error Exception Frame mapping */
-                        <motion.div 
-                            key="error"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="p-8 sm:p-12 text-center"
-                        >
-                            <div className="max-w-xs mx-auto flex flex-col items-center gap-3 p-6 rounded-2xl border border-dashed border-rose-500/20 bg-rose-500/[0.02]">
-                                <AlertCircle size={28} className="text-rose-500/60" />
-                                <p className="text-sm font-black uppercase tracking-wider text-rose-500 m-0">Sync Fault Exception</p>
-                                <p className="text-[10px] font-mono text-rose-400/80 m-0 leading-normal truncate w-full" title={error}>{error}</p>
+            {/* Content */}
+            <div className={loading || error || tickets.length === 0 ? "p-7" : "p-0"}>
+                {loading ? (
+                    <div className="flex flex-col gap-4">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 py-3 animate-pulse">
+                                <div className="h-6 w-16 bg-slate-100 dark:bg-slate-800 rounded-md shrink-0" />
+                                <div className="h-5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-md" />
+                                <div className="h-6 w-20 bg-slate-100 dark:bg-slate-800 rounded-full shrink-0" />
                             </div>
-                        </motion.div>
-                    ) : tickets.length === 0 ? (
-                        /* Empty Repository Tracking Pipeline Block */
-                        <motion.div 
-                            key="empty"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="p-8 sm:p-12 text-center"
-                        >
-                            <div className="max-w-sm mx-auto flex flex-col items-center gap-3 p-6 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.01]">
-                                <Inbox size={28} className="text-slate-300 dark:text-slate-700" />
-                                <h4 className="text-sm font-extrabold text-slate-900 dark:text-white m-0 tracking-tight font-syne">No Active Tickets Found</h4>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium m-0 leading-relaxed">
-                                    Report an infrastructure exception model to activate immediate automated heuristics pipelines.
-                                </p>
-                            </div>
-                        </motion.div>
-                    ) : (
-                        /* Populated Interactive Data Node Cluster Table grid */
-                        <motion.div 
-                            key="data"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="overflow-x-auto customize-scrollbar w-full"
-                        >
-                            <table className="w-full text-left border-collapse min-w-[600px]">
-                                <thead>
-                                    <tr className="bg-slate-50/50 dark:bg-white/[0.01] border-b border-slate-150 dark:border-white/[0.05]">
-                                        <th className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-6 sm:px-8 py-3.5 w-24">Cluster ID</th>
-                                        <th className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-6 sm:px-8 py-3.5">Incident Subject Description</th>
-                                        <th className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-6 sm:px-8 py-3.5 w-32">Status Flag</th>
-                                        <th className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-6 sm:px-8 py-3.5 w-40">Pipeline Record</th>
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-red-500 bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-dashed border-red-200 dark:border-red-900/30">
+                        <AlertCircle size={32} className="mb-3 opacity-50" />
+                        <p className="text-sm font-bold">Sync Failed</p>
+                        <p className="text-[10px] mt-1 text-red-400">{error}</p>
+                    </div>
+                ) : tickets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 bg-gray-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
+                        <Inbox size={32} className="mb-3 opacity-20 dark:text-white" />
+                        <p className="text-sm font-medium dark:text-gray-400">No tickets yet.</p>
+                        <p className="text-[12px] mt-1 dark:text-gray-500">Report an issue and our AI will start helping immediately.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-green-50 dark:border-slate-800">
+                                    <th className="text-[11px] tracking-widest text-gray-400 dark:text-gray-500 font-bold uppercase px-7 py-3">ID</th>
+                                    <th className="text-[11px] tracking-widest text-gray-400 dark:text-gray-500 font-bold uppercase px-7 py-3">Subject</th>
+                                    <th className="text-[11px] tracking-widest text-gray-400 dark:text-gray-500 font-bold uppercase px-7 py-3">Status</th>
+                                    <th className="text-[11px] tracking-widest text-gray-400 dark:text-gray-500 font-bold uppercase px-7 py-3">Est. SLA</th>
+                                    <th className="text-[11px] tracking-widest text-gray-400 dark:text-gray-500 font-bold uppercase px-7 py-3">Submitted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tickets.map((ticket) => (
+                                    <tr
+                                        key={ticket.id}
+                                        onClick={() => navigate(`/ticket/${ticket.id}`)}
+                                        className="border-b border-slate-50 dark:border-slate-800/50 cursor-pointer transition-colors hover:bg-green-50/30 dark:hover:bg-green-900/10"
+                                    >
+                                        <td className="px-7 py-4">
+                                            <span className="font-mono text-[11px] font-bold text-green-600 dark:text-green-500">
+                                                #{ticket.id}
+                                            </span>
+                                        </td>
+                                        <td className="px-7 py-4">
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate max-w-[320px]">
+                                                {safeDisplayText(ticket.summary || ticket.subject || ticket.description, "No description provided")}
+                                            </p>
+                                            <div className="mt-1">
+                                                <LanguageBadge detectedLanguage={ticket?.detected_language} compact />
+                                                {ticket.tags?.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {ticket.tags.slice(0,3).map((tag) => (
+                                                            <TagChip key={tag} tag={tag} variant="admin" />
+                                                        ))}
+                                                        {ticket.tags.length > 3 && (
+                                                            <span className="text-xs text-gray-400">+{ticket.tags.length - 3}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-7 py-4">
+                                            {getStatusBadge(ticket.status)}
+                                        </td>
+                                        <td className="px-7 py-4">
+                                            <SLABadge
+                                                priority={ticket.priority}
+                                                createdAt={ticket.created_at}
+                                                slaBreachAt={ticket.sla_breach_at}
+                                                slaStatus={ticket.sla_status}
+                                                status={ticket.status}
+                                                compact
+                                                ticketId={ticket.id}
+                                            />
+                                        </td>
+                                        <td className="px-7 py-4 whitespace-nowrap">
+                                            <span className="text-gray-500 dark:text-gray-500 text-[12px] font-medium">
+                                                {formatTimelineDate(ticket.created_at)}
+                                            </span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {tickets.map((ticket) => (
-                                        <tr
-                                            key={ticket.id}
-                                            onClick={() => navigate(`/ticket/${ticket.id}`)}
-                                            className="border-b border-slate-100 dark:border-white/[0.02] last:border-none cursor-pointer bg-transparent hover:bg-slate-50/60 dark:hover:bg-white/[0.01] transition-colors"
-                                        >
-                                            <td className="px-6 sm:px-8 py-4">
-                                                <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
-                                                    #{ticket.id}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 sm:px-8 py-4 max-w-[280px] sm:max-w-xs md:max-w-md">
-                                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 m-0 truncate leading-normal font-medium">
-                                                    {ticket.summary || ticket.subject || ticket.description || "No parameter payload definition provided."}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 sm:px-8 py-4">
-                                                {getStatusBadge(ticket.status)}
-                                            </td>
-                                            <td className="px-6 sm:px-8 py-4 whitespace-nowrap">
-                                                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 font-mono">
-                                                    {formatTimelineDate(ticket.created_at)}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </CardContent>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .customize-scrollbar::-webkit-scrollbar { height: 4px; }
-                .customize-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .customize-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.15); border-radius: 99px; }
-                .dark .customize-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
-            `}} />
-        </Card>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 

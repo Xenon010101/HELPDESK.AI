@@ -1,20 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, Settings, LogOut, UserCircle, X, PanelLeftClose, PanelLeftOpen, Menu } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Search, Bell, Menu, User, ChevronDown, Settings, LogOut, UserCircle, X, PanelLeftClose, PanelLeftOpen, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NotificationPopover from '../../user/components/NotificationPopover';
 import ThemeToggle from '../../components/ThemeToggle';
 import useAuthStore from '../../store/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-
+import TicketSearchBar from '../../components/shared/TicketSearchBar';
 /**
  * AdminHeader Component
  * Refined 64px header for the administrative console.
+ * Features a solid white background, specific search placeholder, 
+ * and a functional avatar dropdown menu.
  */
 const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef(null);
-    const searchRef = useRef(null);
     const navigate = useNavigate();
     const { logout, profile: adminProfile } = useAuthStore();
     
@@ -42,6 +42,9 @@ const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar })
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsProfileOpen(false);
             }
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setIsResultsOpen(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -51,6 +54,8 @@ const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar })
         await logout();
         navigate('/login');
     };
+
+    const showResultsPanel = isResultsOpen && trimmedQuery.length > 0;
 
     return (
         <header className="h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 px-6 md:px-10 flex items-center justify-between transition-colors duration-300">
@@ -75,26 +80,8 @@ const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar })
                 )}
 
                 {/* Primary Search Terminal */}
-                <div className="flex-1 max-w-xl relative hidden md:block">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 pointer-events-none" />
-                    <input
-                        ref={searchRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={handleSearchKeyDown}
-                        placeholder="Search tickets, users… (press Enter)"
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-9 py-2 text-sm font-medium tracking-tight focus:outline-none focus:ring-4 focus:ring-emerald-600/5 dark:focus:ring-emerald-400/5 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all text-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={handleSearchClear}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
-                            tabIndex={-1}
-                        >
-                            <X size={14} />
-                        </button>
-                    )}
+                <div className="flex-1 max-w-xl hidden md:block">
+                    <TicketSearchBar />
                 </div>
             </div>
 

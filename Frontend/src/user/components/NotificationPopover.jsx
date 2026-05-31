@@ -33,7 +33,12 @@ const NotificationPopover = ({ isAdmin = false }) => {
                 <Button
                     variant="ghost"
                     size="icon"
+<<<<<<< HEAD
                     className="relative text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+=======
+                    aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+                    className="relative text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+>>>>>>> upstream/gssoc
                 >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
@@ -96,7 +101,12 @@ const NotificationPopover = ({ isAdmin = false }) => {
                 <div className="p-3 bg-gray-50 dark:bg-slate-950 border-t border-gray-100 dark:border-slate-700">
                     <button
                         onClick={() => markNotificationsRead()}
+<<<<<<< HEAD
                         className="w-full py-2 text-xs font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest hover:text-emerald-600 transition-colors bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-700"
+=======
+                        aria-label="Mark all notifications as read"
+                        className="w-full py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-emerald-600 transition-colors bg-white rounded-lg border border-gray-100"
+>>>>>>> upstream/gssoc
                     >
                         Mark all as read
                     </button>

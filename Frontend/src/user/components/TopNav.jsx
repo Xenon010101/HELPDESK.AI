@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Box, MessageSquare, Menu, X, LogOut, User as UserIcon, BookOpen, ChevronRight, HelpCircle } from 'lucide-react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Bell, Box, CheckCircle2, MessageSquare, Menu, X, LogOut, User as UserIcon, Moon, Sun } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import ThemeToggle from '../../components/ThemeToggle';
 import NotificationPopover from "./NotificationPopover";
@@ -9,62 +8,65 @@ import useAuthStore from "../../store/authStore";
 
 const TopNav = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const { profile, logout } = useAuthStore();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isDark, setIsDark] = useState(false);
 
-    const initials = profile?.full_name 
-        ? profile.full_name[0].toUpperCase() 
-        : (profile?.email ? profile.email[0].toUpperCase() : 'U');
+    useEffect(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.documentElement.classList.add('dark');
+            setIsDark(true);
+        }
+    }, []);
+
+    const toggleDark = () => {
+        if (isDark) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+        setIsDark(!isDark);
+    };
+
+    const initials = profile?.full_name ? profile.full_name[0].toUpperCase() : (profile?.email ? profile.email[0].toUpperCase() : 'U');
 
     const handleLogout = async () => {
         await logout();
         navigate('/login');
     };
 
-    const navLinks = [
-        { name: 'Dashboard', path: '/dashboard', icon: Box },
-        { name: 'My Tickets', path: '/my-tickets', icon: MessageSquare },
-        { name: 'Help', path: '/help', icon: HelpCircle },
-        { name: 'Docs', path: '/docs', icon: BookOpen },
-    ];
-
-    const isActive = (path) => location.pathname === path;
-
     return (
-        <header className="w-full bg-slate-950 border-b border-white/[0.05] sticky top-0 z-50 backdrop-blur-xl">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                
-                {/* Left: Branding Identity */}
-                <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
-                    <div className="relative">
-                        <img src="/favicon.png" alt="H" className="w-7 h-7 object-contain relative z-10" />
-                        <div className="absolute inset-0 bg-emerald-500/20 blur-lg rounded-full group-hover:bg-emerald-500/40 transition-colors" />
+        <header className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+            <div className="max-w-[1100px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+                {/* Left: Logo */}
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                    <div className="flex items-center justify-center overflow-hidden">
+                        <img src="/favicon.png" alt="HELPDESK.AI Logo" className="w-7 h-7 object-contain" />
                     </div>
-                    <h1 className="text-xl font-black tracking-tighter text-white font-syne italic uppercase">
-                        HelpDesk<span className="text-emerald-500">.ai</span>
-                    </h1>
+                    <h1 className="text-xl font-black tracking-tighter text-gray-900 dark:text-white italic">HELPDESK.AI</h1>
                 </div>
 
-                {/* Center: Logic-driven Navigation Nodes */}
-                <nav className="hidden md:flex items-center gap-1">
-                    {navLinks.map((link) => (
-                        <Link 
-                            key={link.path}
-                            to={link.path}
-                            className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all rounded-lg ${
-                                isActive(link.path) 
-                                    ? 'text-emerald-400 bg-emerald-500/5' 
-                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                {/* Center: Navigation Links */}
+                <nav className="hidden md:flex items-center gap-8">
+                    <Link className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-emerald-600 transition-colors" to="/dashboard">Dashboard</Link>
+                    <Link className="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" to="/my-tickets">My Tickets</Link>
+                    <Link className="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" to="/help">Help</Link>
                 </nav>
 
-                {/* Right: Operational Telemetry & Profile */}
-                <div className="flex items-center gap-2 sm:gap-4">
+                {/* Right: Profile */}
+                <div className="flex items-center gap-3">
+                    {/* Dark Mode Toggle */}
+                    <button
+                        onClick={toggleDark}
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        aria-label="Toggle dark mode"
+                    >
+                        {isDark ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-600" />}
+                    </button>
+
                     <NotificationPopover />
                     
                     <div className="h-6 w-px bg-white/[0.08] hidden sm:block" />
@@ -84,75 +86,60 @@ const TopNav = () => {
                     {/* Mobile Command Trigger */}
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                        className="md:hidden p-2 text-gray-600 dark:text-gray-300 focus:outline-none"
                     >
                         {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Interface Matrix Overlay */}
-            <AnimatePresence>
-                {isMenuOpen && (
-                    <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden bg-slate-950 border-t border-white/[0.05] absolute w-full shadow-2xl z-50 overflow-hidden"
-                    >
-                        <div className="px-6 py-8 space-y-8">
-                            {/* User Context Node */}
-                            <div className="flex items-center gap-4 border-b border-white/[0.05] pb-8">
-                                <Avatar className="size-14 border border-white/10 shadow-xl">
-                                    <AvatarImage src={profile?.profile_picture} />
-                                    <AvatarFallback className="bg-emerald-500/10 text-emerald-400 font-black text-xl">
-                                        {initials}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-0.5">
-                                    <p className="font-black text-white tracking-tight font-syne uppercase text-sm">{profile?.full_name}</p>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{profile?.email}</p>
-                                </div>
-                            </div>
-
-                            {/* Nav Matrix Map */}
-                            <div className="grid grid-cols-1 gap-2">
-                                {[...navLinks, { name: 'My Profile', path: '/profile', icon: UserIcon }].map((link) => (
-                                    <Link
-                                        key={link.path}
-                                        to={link.path}
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center justify-between p-4 rounded-2xl transition-all group border ${
-                                            isActive(link.path) 
-                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                                                : 'bg-white/[0.02] border-white/[0.03] text-slate-400 hover:border-white/10 hover:text-white'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <link.icon size={18} className={isActive(link.path) ? 'text-emerald-400' : 'text-slate-500'} />
-                                            <span className="text-xs font-black uppercase tracking-[0.2em]">{link.name}</span>
-                                        </div>
-                                        <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </Link>
-                                ))}
-                            </div>
-
-                            {/* Termination Action */}
-                            <div className="pt-6 border-t border-white/[0.05]">
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full h-14 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 rounded-2xl flex items-center justify-center gap-3 text-rose-500 font-black uppercase tracking-[0.3em] text-[10px] transition-all active:scale-[0.98] cursor-pointer"
-                                >
-                                    <LogOut size={16} /> Termination Session
-                                </button>
+            {/* Mobile Menu Overlay */}
+            {isMenuOpen && (
+                <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 absolute w-full shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-6 py-8 space-y-6">
+                        <div className="flex items-center gap-4 border-b border-gray-50 dark:border-gray-700 pb-6">
+                            <Avatar className="size-12 border border-gray-100">
+                                <AvatarImage src={profile?.profile_picture} />
+                                <AvatarFallback className="bg-emerald-50 text-emerald-700 font-black">{initials}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-bold text-gray-900 dark:text-white">{profile?.full_name}</p>
+                                <p className="text-xs text-gray-400 font-medium">{profile?.email}</p>
                             </div>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+                        <div className="space-y-4">
+                            <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-lg font-bold text-gray-700 dark:text-gray-200 hover:text-emerald-700 transition-colors">
+                                <Box size={20} className="text-gray-400" /> Dashboard
+                            </Link>
+                            <Link to="/my-tickets" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-lg font-bold text-gray-700 dark:text-gray-200 hover:text-emerald-700 transition-colors">
+                                <MessageSquare size={20} className="text-gray-400" /> My Tickets
+                            </Link>
+                            <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-lg font-bold text-gray-700 dark:text-gray-200 hover:text-emerald-700 transition-colors">
+                                <UserIcon size={20} className="text-gray-400" /> My Profile
+                            </Link>
+                            <Link
+                                to="/docs"
+                                onClick={() => setIsMenuOpen(false)}
+                                className="flex items-center gap-3 text-lg font-bold text-gray-700 hover:text-emerald-700 transition-colors"
+                            >
+                                <BookOpen size={20} className="text-gray-400" /> Documentation
+                            </Link>
+                        </div>
+
+                        <div className="pt-6 border-t border-gray-50 dark:border-gray-700">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center gap-2 text-red-600 font-bold active:scale-95 transition-all"
+                            >
+                                <LogOut size={18} /> Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 };
 
 export default TopNav;
-

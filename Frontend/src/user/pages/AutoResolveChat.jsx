@@ -46,6 +46,7 @@ const AutoResolveChat = () => {
     const { aiTicket } = useTicketStore();
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
+    const [steps, setSteps] = useState([]);
     const [isThinking, setIsThinking] = useState(false);
     const [isFinal, setIsFinal] = useState(false);
     const [inputText, setInputText] = useState('');
@@ -104,6 +105,28 @@ const AutoResolveChat = () => {
                     }
                 }
 
+                if (newSteps.length >= 2) {
+                    setSteps(newSteps);
+                } else {
+                    const sentences = response
+                        .replace(/\*\*/g, '')
+                        .split(/[.\n]/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 15)
+                        .slice(0, 4);
+
+                    if (sentences.length >= 2) {
+                        const sentenceSteps = sentences.map((s, i) => ({
+                            id: i + 1,
+                            task: s,
+                            completed: false
+                        }));
+                        setSteps(sentenceSteps);
+                    } else {
+                        throw new Error("Could not parse steps from AI response.");
+                    }
+                }
+
                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 setMessages([{
                     role: 'bot',
@@ -131,7 +154,15 @@ const AutoResolveChat = () => {
 
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            // Use setTimeout to ensure DOM has updated before scrolling
+            setTimeout(() => {
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTo({
+                        top: scrollRef.current.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 50);
         }
     }, [messages, isThinking]);
 
@@ -152,7 +183,7 @@ const AutoResolveChat = () => {
         setIsThinking(true);
 
         try {
-            const aiResponse = await askAI(text || "Sent an image for analysis", aiTicket, messages, imageOverride);
+            const aiResponse = await askAI(text || "Sent an image for analysis", aiTicket, [...messages, newUserMsg], imageOverride);
             const botNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             setMessages(prev => [...prev, { role: 'bot', text: aiResponse, timestamp: botNow }]);
@@ -207,7 +238,12 @@ const AutoResolveChat = () => {
         else recognition.start();
     };
 
-    if (isLoading) return <SkeletonLoader />;
+    const toggleStep = (stepId) => {
+        setSteps(prev => prev.map(step =>
+            step.id === stepId ? { ...step, completed: !step.completed } : step
+        ));
+    };
+
     if (!aiTicket) return null;
 
     return (
@@ -226,12 +262,13 @@ const AutoResolveChat = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
             <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
 
-            <div className="max-w-4xl mx-auto relative z-10 w-full">
-                <Card className="rounded-[2.5rem] border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl shadow-2xl flex flex-col h-[780px] overflow-hidden">
-                    
-                    {/* Header Matrix Node */}
-                    <div className="px-6 sm:px-10 py-5 border-b border-white/[0.05] bg-white/[0.01] flex items-center justify-between backdrop-blur-md shrink-0 text-left">
-                        <div className="flex items-center gap-4">
+            <div className="max-w-4xl mx-auto relative">
+                {/* ─── Glassmorphic Chat Container ─── */}
+                <Card className="rounded-[2.5rem] border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] bg-white/70 backdrop-blur-3xl flex flex-col h-[calc(100dvh-8rem)] md:h-[820px] w-full overflow-hidden transition-all duration-500 hover:shadow-[0_48px_80px_-20px_rgba(0,0,0,0.12)]">
+
+                    {/* Header */}
+                    <div className="px-10 py-7 border-b border-white/40 bg-white/40 flex items-center justify-between backdrop-blur-md">
+                        <div className="flex items-center gap-5">
                             <motion.div
                                 initial={{ rotate: -5, scale: 0.95 }}
                                 animate={{ rotate: 0, scale: 1 }}
@@ -263,7 +300,49 @@ const AutoResolveChat = () => {
                         </button>
                     </div>
 
-                    {/* Chronological Transmission View Stream */}
+                    {/* Troubleshooting Steps */}
+                    {steps.length > 0 && (
+                        <div className="px-10 py-6 border-b border-white/40 bg-emerald-50/30">
+                            <div className="flex items-center gap-2 mb-3">
+                                <ListChecks size={16} className="text-emerald-600" />
+                                <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em]">
+                                    Troubleshooting Plan
+                                </h3>
+                            </div>
+                            <div className="space-y-2">
+                                {steps.map((step) => (
+                                    <button
+                                        key={step.id}
+                                        onClick={() => toggleStep(step.id)}
+                                        className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
+                                            step.completed
+                                                ? 'bg-emerald-100 border-emerald-200 opacity-60'
+                                                : 'bg-white border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/50'
+                                        }`}
+                                    >
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                                            step.completed
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-slate-100 text-slate-400'
+                                        }`}>
+                                            {step.completed ? (
+                                                <CheckCircle2 size={14} />
+                                            ) : (
+                                                <span className="text-[10px] font-black">{step.id}</span>
+                                            )}
+                                        </div>
+                                        <span className={`text-[13px] font-bold leading-snug transition-all duration-300 ${
+                                            step.completed ? 'text-slate-400 line-through' : 'text-slate-700'
+                                        }`}>
+                                            {step.task}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Chat Messages */}
                     <div
                         ref={scrollRef}
                         className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 space-y-8 customize-scrollbar"

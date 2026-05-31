@@ -15,7 +15,7 @@ const QuickActionCard = ({ icon: Icon, title, description, colorClass }) => {
         >
             <Card
                 onClick={() => navigate('/create-ticket')}
-                className="group flex flex-col items-start p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-white/[0.08] shadow-sm dark:shadow-none hover:border-emerald-500/50 dark:hover:border-emerald-500/30 text-left w-full cursor-pointer transition-colors relative overflow-hidden"
+                className="group flex flex-col items-start p-6 bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 dark:border-white/[0.08] shadow-sm dark:shadow-none hover:border-emerald-500/50 dark:hover:border-emerald-500/50 dark:hover:border-emerald-500/30 text-left w-full cursor-pointer transition-colors relative overflow-hidden"
             >
                 <div className={`size-12 rounded-xl border border-transparent flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${colorClass}`}>
                     <Icon className="w-5 h-5" />

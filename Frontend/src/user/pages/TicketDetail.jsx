@@ -21,6 +21,7 @@ const TicketDetail = () => {
     const [isReopening, setIsReopening] = useState(false);
     const [showCsat, setShowCsat] = useState(false);
     const [csatHasBeenDismissed, setCsatHasBeenDismissed] = useState(false);
+    const [showOriginalText, setShowOriginalText] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -82,6 +83,40 @@ const TicketDetail = () => {
         }
     }, [ticket?.status, ticket?.csat_rating, csatHasBeenDismissed]);
 
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-10 mt-20">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent"></div>
+                <p className="mt-4 text-gray-500 font-bold uppercase tracking-widest text-xs">Retrieving Ticket Data...</p>
+            </div>
+        );
+    }
+
+    if (!ticket) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-10 mt-20">
+                <TicketStatusBadge status="Error" />
+                <h2 className="text-2xl font-bold mt-4 text-gray-900">Ticket Not Found</h2>
+                <p className="text-gray-500 mt-2 text-center max-w-md">We couldn't locate the ticket you're looking for. It may have been deleted or the ID is incorrect.</p>
+                <button
+                    onClick={() => navigate('/my-tickets')}
+                    className="mt-6 px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition"
+                >
+                    Back to My Tickets
+                </button>
+            </div>
+        );
+    }
+
+    // Safely parse arrays and formats
+    const entities = ticket.metadata?.entities || ticket.entities || [];
+    const solutionSteps = Array.isArray(ticket.solution_steps) ? ticket.solution_steps : [];
+    const isAutoResolved = ticket.auto_resolve === true;
+    const confidenceScore = ticket.metadata?.confidence ?? ticket.routing_confidence ?? 0.92;
+    const isTranslated = Boolean(ticket.detected_language && ticket.detected_language.toLowerCase() !== 'en' && ticket.original_body);
+    const sourceLanguageName = ticket.detected_language ? ticket.detected_language.toUpperCase() : 'Unknown';
+
+
     const handleReopen = async () => {
         setIsReopening(true);
         try {
@@ -136,6 +171,27 @@ const TicketDetail = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left: Timeline & Chat */}
                     <div className="lg:col-span-2 flex flex-col gap-8">
+                    {isTranslated && (
+                        <Card className="p-4 rounded-2xl border border-sky-100 bg-sky-50/70 shadow-sm">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-semibold text-sky-900">
+                                    Translated from {sourceLanguageName}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOriginalText(prev => !prev)}
+                                    className="text-xs font-bold text-sky-700 hover:text-sky-900"
+                                >
+                                    {showOriginalText ? "View English" : "View Original"}
+                                </button>
+                            </div>
+                            {showOriginalText && (
+                                <p className="mt-3 text-sm text-slate-700 bg-white border border-sky-100 rounded-lg px-3 py-2">
+                                    {ticket.original_body}
+                                </p>
+                            )}
+                        </Card>
+                    )}
                         <Card className="rounded-[2.5rem] border border-white/[0.08] bg-white/[0.02] p-8 shadow-2xl">
                             <h2 className="text-sm font-black text-white font-syne uppercase tracking-widest mb-8 flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-emerald-400" /> Transmission Timeline

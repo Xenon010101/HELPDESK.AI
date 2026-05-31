@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Upload, X, ArrowRight, Sparkles, BrainCircuit,
     AlertCircle, CheckCircle2, Mic, Volume2, Globe, ChevronDown
@@ -8,11 +8,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "../../components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
 import { Textarea } from "../../components/ui/textarea";
-import Tesseract from 'tesseract.js';
 import { translateText, SUPPORTED_LANGUAGES } from '../../services/translationService';
+import TemplateSelector from '../components/TemplateSelector';
+import TemplateForm from '../components/TemplateForm';
+import TICKET_TEMPLATES, { serializeFieldsToText, getEmptyFormValues } from '../../data/ticketTemplates';
+import { API_CONFIG } from '../../config';
 
 const CreateTicket = () => {
     const [issue, setIssue] = useState('');
+    const [ticketTitle, setTicketTitle] = useState('');
     const [file, setFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -20,18 +24,29 @@ const CreateTicket = () => {
     const [extractedOCR, setExtractedOCR] = useState('');
     const [isOcrLoading, setIsOcrLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const isListeningRef = useRef(false);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
+    const location = useLocation();
     const MAX_CHARS = 1000;
-    const supportsSpeech = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+    const supportsSpeech = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     const [selectedLanguage, setSelectedLanguage] = useState('en');
     const [isTranslating, setIsTranslating] = useState(false);
     const [isLangOpen, setIsLangOpen] = useState(false);
     const langRef = useRef(null);
 
+    // ── Smart Template state (v2: two-step highlight → activate flow) ──
+    const [highlightedTemplateId, setHighlightedTemplateId] = useState(null);  // Card highlighted (preview)
+    const [activatedTemplateId, setActivatedTemplateId] = useState(null);      // Template committed (form shown)
+    const [formValues, setFormValues] = useState({});                          // Dynamic form field values
+    const [templateUsed, setTemplateUsed] = useState(false);
+    const [userModified, setUserModified] = useState(false);
+
+    // Voice UI states
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [voiceTranscript, setVoiceTranscript] = useState('');
     const [interimVoice, setInterimVoice] = useState('');
+    const [usedVoice, setUsedVoice] = useState(false);
 
     const recognitionRef = useRef(null);
     const audioContextRef = useRef(null);
@@ -40,15 +55,34 @@ const CreateTicket = () => {
     const animationFrameRef = useRef(null);
     const [visualizerData, setVisualizerData] = useState(new Array(16).fill(15));
     const streamRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const [recordingTime, setRecordingTime] = useState(120);
+    const recordingTimerRef = useRef(null);
+    const [isTranscribing, setIsTranscribing] = useState(false);
 
     useEffect(() => {
         return () => {
+            isListeningRef.current = false;
             if (recognitionRef.current) recognitionRef.current.stop();
             if (audioContextRef.current) audioContextRef.current.close();
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         };
     }, []);
 
+    // Pre-select template if navigated from QuickActions or Dashboard with a templateId
+    // v2: Now highlights the template so user sees the preview first
+    useEffect(() => {
+        const incomingTemplateId = location.state?.templateId;
+        if (incomingTemplateId) {
+            const template = TICKET_TEMPLATES.find((t) => t.id === incomingTemplateId);
+            if (template) {
+                handleHighlightTemplate(template);
+            }
+        }
+    }, []);
+
+    // Close language dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (langRef.current && !langRef.current.contains(event.target)) {
@@ -68,6 +102,7 @@ const CreateTicket = () => {
     const processOCR = async (imageFile) => {
         setIsOcrLoading(true);
         try {
+            const { default: Tesseract } = await import('tesseract.js');
             const { data: { text } } = await Tesseract.recognize(imageFile, 'eng');
             setExtractedOCR(text.trim());
         } catch (err) {
@@ -86,17 +121,15 @@ const CreateTicket = () => {
     };
 
     const startListening = async () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            setError("Speech recognition is not supported in this browser.");
+        if (!supportsSpeech) {
+            setError("Microphone is not supported in this browser.");
             return;
         }
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
-            
+
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContextRef.current = new AudioContext();
             const source = audioContextRef.current.createMediaStreamSource(stream);
@@ -122,42 +155,59 @@ const CreateTicket = () => {
             };
             updateVisualizer();
 
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
+            // Setup MediaRecorder
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
 
-            recognition.onresult = (event) => {
-                let finalStr = '';
-                let interimStr = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalStr += event.results[i][0].transcript;
-                    } else {
-                        interimStr += event.results[i][0].transcript;
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                setIsTranscribing(true);
+                try {
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.webm');
+
+                    const backendUrl = API_CONFIG.BACKEND_URL;
+                    const res = await fetch(`${backendUrl}/api/voice/transcribe`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!res.ok) throw new Error('Transcription failed');
+                    const data = await res.json();
+
+                    setVoiceTranscript(prev => {
+                        const combined = prev + ' ' + (data.transcribed_text || '');
+                        return combined.trim();
+                    });
+                } catch (err) {
+                    console.error("Transcription Error:", err);
+                    setError("Failed to transcribe audio.");
+                } finally {
+                    setIsTranscribing(false);
+                }
+            };
+
+            mediaRecorder.start();
+            setRecordingTime(120);
+            recordingTimerRef.current = setInterval(() => {
+                setRecordingTime(prev => {
+                    if (prev <= 1) {
+                        stopListening();
+                        return 0;
                     }
-                }
-                if (finalStr) setVoiceTranscript(prev => prev + ' ' + finalStr);
-                setInterimVoice(interimStr);
-            };
-
-            recognition.onerror = (event) => {
-                console.error("Speech Recognition Error:", event.error);
-                if (event.error !== 'no-speech') {
-                    setError(`Microphone error: ${event.error}`);
-                }
-            };
-
-            recognition.onend = () => {
-                if (!isListening) {
-                    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-                }
-            };
-
-            recognitionRef.current = recognition;
-            recognition.start();
+                    return prev - 1;
+                });
+            }, 1000);
 
             setIsListening(true);
+            isListeningRef.current = true;
             setShowVoiceModal(true);
             setVoiceTranscript('');
             setInterimVoice('');
@@ -171,10 +221,17 @@ const CreateTicket = () => {
 
     const stopListening = () => {
         setIsListening(false);
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            recognitionRef.current = null;
+        isListeningRef.current = false;
+
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
         }
+
+        if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+        }
+
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
@@ -190,11 +247,11 @@ const CreateTicket = () => {
     };
 
     const handleSaveVoice = () => {
-        stopListening();
         setIssue(prev => {
-            const combined = prev + ' ' + voiceTranscript + ' ' + interimVoice;
+            const combined = prev + ' ' + voiceTranscript;
             return combined.trim().substring(0, MAX_CHARS);
         });
+        setUsedVoice(true);
         setShowVoiceModal(false);
     };
 
@@ -242,11 +299,68 @@ const CreateTicket = () => {
         }
     };
 
+    // ── Smart Template handlers (v2: highlight → activate → dismiss) ──
+
+    /** Step 1: Highlight a template card (shows preview, does NOT apply) */
+    const handleHighlightTemplate = (template) => {
+        setHighlightedTemplateId(template ? template.id : null);
+        setError('');
+    };
+
+    /** Step 2: User explicitly confirms — activate template and show dynamic form */
+    const handleActivateTemplate = (template) => {
+        setActivatedTemplateId(template.id);
+        setHighlightedTemplateId(null);
+        setTicketTitle(template.title);
+        setFormValues(getEmptyFormValues(template.fields));
+        setIssue('');  // Clear manual textarea content
+        setTemplateUsed(true);
+        setUserModified(false);
+        setError('');
+    };
+
+    /** Dismiss: clear template and restore manual mode */
+    const handleDismissTemplate = () => {
+        setActivatedTemplateId(null);
+        setHighlightedTemplateId(null);
+        setTicketTitle('');
+        setIssue('');
+        setFormValues({});
+        setTemplateUsed(false);
+        setUserModified(false);
+    };
+
+    /** Handle individual field changes in the dynamic form */
+    const handleFormFieldChange = (key, value) => {
+        setFormValues((prev) => ({ ...prev, [key]: value }));
+        if (templateUsed) setUserModified(true);
+    };
+
     const handleAnalyze = async (e) => {
         e.preventDefault();
-        if (!issue.trim()) {
-            setError('Please describe your issue first.');
-            return;
+
+        // ── v2: Determine description text based on active mode ──
+        const activeTemplate = TICKET_TEMPLATES.find((t) => t.id === activatedTemplateId);
+        let descriptionText = issue; // Default: manual textarea content
+
+        if (activeTemplate) {
+            // Template mode: serialize structured form fields to text
+            descriptionText = serializeFieldsToText(activeTemplate.fields, formValues);
+
+            // Validate required fields
+            const missingFields = activeTemplate.fields
+                .filter((f) => f.required && !formValues[f.key] && formValues[f.key] !== false)
+                .map((f) => f.label);
+            if (missingFields.length > 0) {
+                setError(`Please fill in required fields: ${missingFields.join(', ')}`);
+                return;
+            }
+        } else {
+            // Manual mode: validate textarea
+            if (!issue.trim()) {
+                setError('Please describe your issue first.');
+                return;
+            }
         }
 
         if (file && !isOcrLoading && !extractedOCR.trim()) {
@@ -258,12 +372,17 @@ const CreateTicket = () => {
         setError('');
 
         try {
-            let textToSubmit = issue;
+            let textToSubmit = descriptionText;
 
             if (selectedLanguage !== 'en') {
                 setIsTranslating(true);
-                textToSubmit = await translateText(issue, selectedLanguage, 'en');
+                textToSubmit = await translateText(descriptionText, selectedLanguage, 'en');
                 setIsTranslating(false);
+            }
+
+            // If a title was provided, prepend it to the text for richer AI context
+            if (ticketTitle.trim()) {
+                textToSubmit = `${ticketTitle.trim()}\n\n${textToSubmit}`;
             }
 
             let imageBase64 = "";
@@ -281,10 +400,16 @@ const CreateTicket = () => {
             navigate('/ai-processing', {
                 state: {
                     text: textToSubmit,
-                    original_text: issue,
+                    original_text: descriptionText,
                     original_language: selectedLanguage,
                     image_base64: imageBase64,
-                    image_text: extractedOCRText
+                    image_text: extractedOCRText,
+                    // Smart Template metadata
+                    template_id: activatedTemplateId || null,
+                    template_used: templateUsed,
+                    user_modified: userModified,
+                    ticket_title: ticketTitle.trim() || null,
+                    source: usedVoice ? "voice" : "text",
                 }
             });
 
@@ -300,8 +425,8 @@ const CreateTicket = () => {
         <div className="min-h-screen bg-slate-950 pb-20 relative overflow-hidden font-sans">
             {/* Ambient Background Matrix */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
-            <div className="absolute inset-0 opacity-[0.02]" 
-                 style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
+            <div className="absolute inset-0 opacity-[0.02]"
+                style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
 
             <main className="pt-32 px-4 sm:px-6 relative z-10">
                 <div className="w-full max-w-2xl mx-auto">
@@ -310,7 +435,7 @@ const CreateTicket = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="w-full text-left"
                     >
-                        <Card className="rounded-[2.5rem] border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col">
+                        <Card className="rounded-[2.5rem] border border-white/[0.08] dark:border-slate-800 bg-white/[0.02] dark:bg-slate-900/50 backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col">
                             <CardHeader className="p-6 sm:p-8 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
@@ -318,103 +443,143 @@ const CreateTicket = () => {
                                     </div>
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-0.5">Workspace Node</span>
                                 </div>
-                                <CardTitle className="text-2xl sm:text-3xl font-black text-white tracking-tight font-syne uppercase">Report a New Issue</CardTitle>
-                                <CardDescription className="text-sm sm:text-base text-slate-400 font-medium leading-relaxed">
+                                <CardTitle className="text-2xl sm:text-3xl font-black text-white dark:text-white tracking-tight font-syne uppercase">Report a New Issue</CardTitle>
+                                <CardDescription className="text-sm sm:text-base text-slate-400 dark:text-slate-400 font-medium leading-relaxed">
                                     Describe the boundary exceptions and the automated heuristic pipeline will execute real-time triage.
                                 </CardDescription>
                             </CardHeader>
 
                             <CardContent className="p-6 sm:p-8 pt-2 flex-grow flex flex-col">
                                 <form onSubmit={handleAnalyze} className="space-y-6 flex-grow flex flex-col">
-                                    
-                                    {/* Language Context Block */}
+
+                                    {/* Smart Ticket Templates Selection */}
+                                    <TemplateSelector
+                                        selectedTemplateId={highlightedTemplateId}
+                                        activatedTemplateId={activatedTemplateId}
+                                        onHighlightTemplate={handleHighlightTemplate}
+                                        onActivateTemplate={handleActivateTemplate}
+                                        onDismissTemplate={handleDismissTemplate}
+                                        hasExistingContent={!!(issue.trim() || ticketTitle.trim())}
+                                    />
+
+                                    {/* Title Field */}
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-0.5">Describe your issue</label>
-                                            <span className={`font-mono text-xs font-bold ${issue.length >= MAX_CHARS ? 'text-rose-500' : 'text-slate-600'}`}>
-                                                {issue.length} / {MAX_CHARS}
-                                            </span>
-                                        </div>
+                                        <label className="text-sm font-bold text-gray-400 dark:text-slate-300">Title</label>
+                                        <input
+                                            type="text"
+                                            value={ticketTitle}
+                                            onChange={(e) => {
+                                                setTicketTitle(e.target.value);
+                                                if (templateUsed) setUserModified(true);
+                                            }}
+                                            placeholder="Brief summary of your issue"
+                                            className="w-full rounded-2xl border border-white/10 bg-white/[0.01] dark:bg-slate-950 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-base p-4"
+                                            disabled={isLoading}
+                                            maxLength={200}
+                                        />
+                                    </div>
 
-                                        <div className="flex items-center gap-3 bg-white/[0.01] border border-white/5 p-3 rounded-2xl">
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0 ml-1">Payload Language:</label>
-                                            <div className="relative flex-1" ref={langRef}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsLangOpen(!isLangOpen)}
-                                                    className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 h-11 text-xs font-black uppercase tracking-wider text-slate-300 flex items-center justify-between hover:border-emerald-500/30 transition-all shadow-inner group cursor-pointer"
-                                                >
-                                                    <span className="flex items-center gap-2">
-                                                        <Globe size={14} className="text-emerald-400" />
-                                                        {SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.label}
-                                                    </span>
-                                                    <motion.div
-                                                        animate={{ rotate: isLangOpen ? 180 : 0 }}
-                                                        className="text-slate-500 group-hover:text-emerald-400 transition-colors"
-                                                    >
-                                                        <ChevronDown size={14} />
-                                                    </motion.div>
-                                                </button>
-
-                                                <AnimatePresence>
-                                                    {isLangOpen && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                            animate={{ opacity: 1, y: 5, scale: 1 }}
-                                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                            className="absolute z-50 top-full left-0 right-0 bg-slate-950 border border-white/10 rounded-2xl shadow-2xl p-2 overflow-hidden text-left"
-                                                        >
-                                                            <div className="max-h-[200px] overflow-y-auto customize-scrollbar space-y-1">
-                                                                {SUPPORTED_LANGUAGES.map(lang => (
-                                                                    <button
-                                                                        key={lang.code}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            setSelectedLanguage(lang.code);
-                                                                            setIsLangOpen(false);
-                                                                        }}
-                                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between border-none bg-transparent cursor-pointer
-                                                                            ${selectedLanguage === lang.code
-                                                                                ? 'bg-emerald-500/10 text-emerald-400'
-                                                                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        <span>{lang.label}</span>
-                                                                        {selectedLanguage === lang.code && <CheckCircle2 size={14} className="text-emerald-400" />}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                            {selectedLanguage !== 'en' && (
-                                                <motion.span
-                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    className="text-[9px] bg-emerald-500 text-slate-950 px-2.5 h-6 rounded-full font-black uppercase tracking-widest flex items-center shadow-lg shadow-emerald-500/10"
-                                                >
-                                                    Translating
-                                                </motion.span>
-                                            )}
-                                        </div>
-
-                                        <div className="relative flex-grow flex flex-col">
-                                            <Textarea
-                                                value={issue}
-                                                onChange={(e) => setIssue(e.target.value.substring(0, MAX_CHARS))}
-                                                placeholder="Describe transaction anomalies or layout constraints. Example: LDAP verification timeout block error code 503."
-                                                className="min-h-[160px] flex-grow rounded-2xl border-white/10 bg-white/[0.01] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm p-4 resize-none leading-relaxed font-medium shadow-inner"
+                                    {/* Structured Template Form OR Manual Entry Pipeline */}
+                                    {activatedTemplateId ? (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-400 dark:text-slate-300">Fill in the details</label>
+                                            <TemplateForm
+                                                fields={TICKET_TEMPLATES.find(t => t.id === activatedTemplateId)?.fields || []}
+                                                values={formValues}
+                                                onChange={handleFormFieldChange}
                                                 disabled={isLoading}
                                             />
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="space-y-2 flex-grow flex flex-col relative">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-bold text-gray-400 dark:text-slate-300">Describe your issue</label>
+                                                <span className={`text-xs font-semibold ${issue.length >= MAX_CHARS ? 'text-rose-500' : 'text-gray-500'}`}>
+                                                    {issue.length} / {MAX_CHARS}
+                                                </span>
+                                            </div>
 
-                                    {/* Voice Signal Input Section */}
+                                            <div className="flex items-center gap-3 bg-white/[0.01] dark:bg-slate-950 border border-white/5 dark:border-slate-800 p-3 rounded-2xl">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0 ml-1">Payload Language:</label>
+                                                <div className="relative flex-1" ref={langRef}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsLangOpen(!isLangOpen)}
+                                                        className="w-full bg-white/[0.02] border border-white/10 dark:border-slate-800 rounded-xl px-4 h-11 text-xs font-black uppercase tracking-wider text-slate-300 flex items-center justify-between hover:border-emerald-500/30 transition-all shadow-inner group cursor-pointer"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <Globe size={14} className="text-emerald-400" />
+                                                            {SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.label}
+                                                        </span>
+                                                        <motion.div
+                                                            animate={{ rotate: isLangOpen ? 180 : 0 }}
+                                                            className="text-slate-500 group-hover:text-emerald-400 transition-colors"
+                                                        >
+                                                            <ChevronDown size={14} />
+                                                        </motion.div>
+                                                    </button>
+
+                                                    <AnimatePresence>
+                                                        {isLangOpen && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                animate={{ opacity: 1, y: 5, scale: 1 }}
+                                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                className="absolute z-50 top-full left-0 right-0 bg-slate-950 border border-white/10 dark:border-slate-800 rounded-2xl shadow-2xl p-2 overflow-hidden text-left"
+                                                            >
+                                                                <div className="max-h-[200px] overflow-y-auto customize-scrollbar space-y-1">
+                                                                    {SUPPORTED_LANGUAGES.map(lang => (
+                                                                        <button
+                                                                            key={lang.code}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedLanguage(lang.code);
+                                                                                setIsLangOpen(false);
+                                                                            }}
+                                                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-between border-none bg-transparent cursor-pointer
+                                                                    ${selectedLanguage === lang.code
+                                                                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                                                                }`}
+                                                                        >
+                                                                            <span>{lang.label}</span>
+                                                                            {selectedLanguage === lang.code && <CheckCircle2 size={14} className="text-emerald-400" />}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+
+                                                {selectedLanguage !== 'en' && (
+                                                    <motion.span
+                                                        initial={{ opacity: 0, scale: 0.9 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        className="text-[9px] bg-emerald-500 text-slate-950 px-2.5 h-6 rounded-full font-black uppercase tracking-widest flex items-center shadow-lg shadow-emerald-500/10"
+                                                    >
+                                                        Translating
+                                                    </motion.span>
+                                                )}
+                                            </div>
+
+                                            <div className="relative flex-grow flex flex-col">
+                                                <Textarea
+                                                    value={issue}
+                                                    onChange={(e) => setIssue(e.target.value.substring(0, MAX_CHARS))}
+                                                    placeholder="Describe transaction anomalies or layout constraints. Example: LDAP verification timeout block error code 503."
+                                                    className="min-h-[160px] flex-grow rounded-2xl border-white/10 bg-white/[0.01] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm p-4 resize-none leading-relaxed font-medium shadow-inner"
+                                                    disabled={isLoading}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Speech Synthesis Telemetry */}
                                     {supportsSpeech && (
                                         <div className="relative overflow-hidden rounded-3xl border border-white/[0.05] bg-white/[0.01] p-5 shadow-inner">
                                             <div className="flex items-center justify-between gap-4">
-                                                <div className="flex items-center gap-3.5 text-left">
+                                                <div className="flex gap-3.5 text-left items-center">
                                                     <div className={`p-2.5 rounded-xl transition-colors duration-500 ${isListening ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'}`}>
                                                         <Mic size={18} className={isListening ? "animate-pulse" : ""} />
                                                     </div>
@@ -427,9 +592,10 @@ const CreateTicket = () => {
                                                     type="button"
                                                     onClick={toggleMic}
                                                     className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-500 border-none shrink-0 cursor-pointer
-                                                        ${isListening
+                                            ${isListening
                                                             ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/10'
-                                                            : 'bg-emerald-600 hover:bg-emerald-50 text-slate-950 font-bold shadow-lg shadow-emerald-600/10'}`}
+                                                            : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/10'
+                                                        }`}
                                                 >
                                                     {isListening ? <Volume2 className="animate-bounce text-white" size={18} /> : <Mic size={18} />}
                                                 </Button>
@@ -527,10 +693,10 @@ const CreateTicket = () => {
                                         </AnimatePresence>
                                     </div>
 
-                                    {/* Action Failure System Warning Logs */}
+                                    {/* System Warning Log Interface */}
                                     <AnimatePresence mode="wait">
                                         {error && (
-                                            <motion.div 
+                                            <motion.div
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
@@ -542,7 +708,7 @@ const CreateTicket = () => {
                                         )}
                                     </AnimatePresence>
 
-                                    {/* Submission Execution Node */}
+                                    {/* Submission Controls */}
                                     <Button
                                         type="submit"
                                         disabled={isLoading || isOcrLoading || isTranslating || !issue.trim()}
@@ -560,7 +726,7 @@ const CreateTicket = () => {
                                             </>
                                         )}
                                     </Button>
-                                    
+
                                     <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-600 select-none">
                                         <BrainCircuit size={14} />
                                         <span>Autonomous HelpDesk.ai Core Optimization Engine</span>
@@ -658,14 +824,24 @@ const CreateTicket = () => {
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    type="button"
-                                    onClick={handleSaveVoice}
-                                    disabled={!voiceTranscript && !interimVoice}
-                                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 rounded-xl shadow-xl shadow-emerald-600/10 border-none cursor-pointer text-xs uppercase tracking-wider disabled:opacity-20"
-                                >
-                                    Inject Payload
-                                </Button>
+                                {isListening ? (
+                                    <Button
+                                        type="button"
+                                        onClick={stopListening}
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold h-12 rounded-xl shadow-lg shadow-red-200"
+                                    >
+                                        Stop Recording
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        onClick={handleSaveVoice}
+                                        disabled={!voiceTranscript && !isTranscribing}
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-emerald-200 flex items-center justify-center"
+                                    >
+                                        {isTranscribing ? <><Loader2 className="animate-spin mr-2" size={18} /> Transcribing...</> : "Insert Text"}
+                                    </Button>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>

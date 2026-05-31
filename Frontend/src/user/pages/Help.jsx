@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, ChevronRight, ChevronDown, PlayCircle, Book, Mail, ShieldCheck, Search, Zap, LifeBuoy } from 'lucide-react';
+import { Video, ChevronRight, ChevronDown, PlayCircle, Book, Mail, ShieldCheck, Search, Zap, LifeBuoy, Keyboard, X } from 'lucide-react';
 import { Card, CardContent } from "../../components/ui/card";
 import { YOUTUBE_RESOURCES, VIDEO_CATEGORIES } from '../../data/youtubeResources';
+import { SHORTCUTS_LEGEND } from '../../hooks/useKeyboardShortcuts';
+
 import useAuthStore from "../../store/authStore";
 
 const FAQItem = ({ faq }) => {
@@ -42,11 +44,12 @@ const Help = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
     const generateMailto = () => {
-        const email = "bonthalamadhavi1@gmail.com";
-        const subject = encodeURIComponent("Support Request: Core Telemetry Matrix Exception");
-        const fullName = profile?.full_name || "Authorized Identity";
+        const email = import.meta.env.VITE_SUPPORT_EMAIL || "support@helpdesk.ai";
+        const subject = encodeURIComponent("Support Request: [Issue Summary]");
+        const fullName = profile?.full_name || "User";
         
         const bodyTemplate = `Hi HelpDesk.AI Support Team,\n\nI am writing to report a boundary exception regarding:\n[ENTER LOG DIAGNOSTICS PAYLOAD HERE]\n\nRegards,\n${fullName}`;
         return `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyTemplate)}`;
@@ -185,10 +188,12 @@ const Help = () => {
                                             key={category}
                                             type="button"
                                             onClick={() => setActiveTab(category)}
-                                            className={`px-4 h-8 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all border-none cursor-pointer ${
-                                                activeTab === category 
-                                                    ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold' 
-                                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
+                                            aria-label={`Filter videos by ${category}`}
+                                            aria-pressed={activeTab === category}
+                                            className={`px-5 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
+                                                activeTab === category
+                                                ? 'bg-white text-emerald-700 shadow-sm ring-1 ring-gray-900/5'
+                                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                                             }`}
                                         >
                                             {category}
@@ -276,6 +281,24 @@ const Help = () => {
                                         <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">SLA Triage &lt; 24h</div>
                                     </div>
                                 </div>
+
+                        {/* Keyboard Shortcuts Legend Trigger */}
+                        <button
+                            type="button"
+                            onClick={() => setIsShortcutsOpen(true)}
+                            className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center justify-between text-left hover:border-emerald-200 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                                    <Keyboard size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Keyboard Shortcuts</h4>
+                                    <p className="text-sm text-gray-500 mt-1">Navigate faster across the app</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                        </button>
                                 <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors shrink-0" />
                             </a>
                         </Card>
@@ -288,12 +311,71 @@ const Help = () => {
                                     <ShieldCheck size={12} /> Environment Normalized
                                 </p>
                             </div>
-                            <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <div className="h-3 w-3 bg-emerald-500 rounded-full animate-pulse ring-4 ring-emerald-50" />
+                        </div>
+
+                        {/* Keyboard Shortcuts Sidebar Entry */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                                    <Keyboard className="w-5 h-5 text-emerald-600" /> Keyboard Shortcuts
+                                </h4>
+                                <p className="text-sm text-gray-500 mt-1">Navigate the system faster using global hotkeys.</p>
+                            </div>
+                            <button
+                                onClick={() => setIsShortcutsOpen(true)}
+                                className="mt-4 w-full py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider rounded-xl border border-emerald-100 flex items-center justify-center gap-2 cursor-pointer focus:outline-none"
+                            >
+                                View Shortcuts Legend
+                            </button>
                         </div>
                     </div>
 
                 </div>
             </main>
+
+            {/* Keyboard Shortcuts Legend Overlay */}
+            {isShortcutsOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    onClick={() => setIsShortcutsOpen(false)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Keyboard shortcuts"
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <Keyboard className="w-5 h-5 text-emerald-600" /> Keyboard Shortcuts
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsShortcutsOpen(false)}
+                                className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                aria-label="Close shortcuts legend"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <ul className="divide-y divide-gray-100">
+                            {SHORTCUTS_LEGEND.map(({ combo, description }) => (
+                                <li key={combo} className="flex items-center justify-between py-3">
+                                    <span className="text-sm text-gray-700">{description}</span>
+                                    <kbd className="px-2.5 py-1 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded-md">
+                                        {combo}
+                                    </kbd>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="mt-5 text-xs text-gray-500">
+                            Tip: shortcuts are disabled while typing in inputs or text areas.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

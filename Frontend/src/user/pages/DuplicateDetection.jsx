@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    FileText, Database, Zap, CheckCircle2, AlertTriangle, 
-    ArrowRight, Lightbulb, SearchX, TicketCheck
+    FileText, Database, Zap,
+    CheckCircle2, AlertTriangle, ArrowRight,
+    Lightbulb, SearchX, TicketCheck, Search, Bell, Link2
 } from 'lucide-react';
 import useTicketStore from "../../store/ticketStore";
 import { supabase } from "../../lib/supabaseClient";
@@ -72,6 +73,7 @@ const DuplicateDetection = () => {
     }, [isLoading, aiTicket, navigate]);
 
     const isDuplicate = aiTicket?.duplicate_ticket?.is_duplicate === true;
+    const duplicateParentTicketId = aiTicket?.parent_ticket_id || aiTicket?.duplicate_ticket?.parent_ticket_id || aiTicket?.duplicate_ticket?.duplicate_ticket_id;
 
     useEffect(() => {
         if (isLoading || !aiTicket || isDuplicate) return;

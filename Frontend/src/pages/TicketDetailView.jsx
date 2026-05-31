@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import useTicketStore from '../store/ticketStore';
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import SLACountdownTimer from "../components/shared/SLACountdownTimer";
+import TicketTagManager from '../components/TicketTagManager';
 
 function TicketDetailView() {
     const { ticket_id } = useParams();
@@ -184,9 +186,21 @@ function TicketDetailView() {
                                     </div>
                                 </div>
                             </CardContent>
-                        </Card>
+                            </Card>
 
-                        {/* Artificial Intelligence Heuristics Stream */}
+                            {/* Tags Manager */}
+                            <div className="mt-6 border-t border-gray-100 pt-4">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-3">🏷️ Tags</h3>
+                                <TicketTagManager
+                                    ticketId={ticket.id || ticket.ticket_id}
+                                    ticketTitle={ticket.summary || ticket.subject || ''}
+                                    ticketBody={ticket.description || ''}
+                                    category={ticket.category || ''}
+                                    companyId={ticket.company_id || ''}
+                                />
+                            </div>
+
+                        {/* AI Analysis Card */}
                         {(ticket.reasoning || ticket.image_description) && (
                             <Card className="p-0 overflow-hidden rounded-[2.5rem] border border-emerald-500/10 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none">
                                 <CardHeader className="bg-emerald-950 px-6 sm:p-8 py-5 border-b border-emerald-900/60">
@@ -369,13 +383,10 @@ function TicketDetailView() {
                             </CardContent>
                         </Card>
 
-                        {/* Static Matrix Log Timestamp Block */}
-                        <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-center lg:text-left shadow-inner flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className="space-y-0.5">
-                                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Created At</span>
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 m-0">{new Date(ticket.created_at).toLocaleString()}</p>
-                            </div>
-                            <Clock size={16} className="text-slate-400 dark:text-slate-600 hidden lg:block shrink-0" />
+                        <div className="p-4 bg-white rounded-2xl border border-gray-100 text-center shadow-sm">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Created At</p>
+                            <p className="text-sm font-bold text-gray-700">{new Date(ticket.created_at).toLocaleString()}</p>
+                <SLACountdownTimer createdAt={ticket.created_at} priority={ticket.priority || "medium"} />
                         </div>
                     </div>
 

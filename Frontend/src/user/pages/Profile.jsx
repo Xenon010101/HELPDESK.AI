@@ -13,6 +13,7 @@ import useAuthStore from "../../store/authStore";
 import useToastStore from "../../store/toastStore";
 import { supabase } from "../../lib/supabaseClient";
 import BugReportWidget from "../../components/shared/BugReportWidget";
+import UserScorecard from "../components/UserScorecard";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -392,12 +393,27 @@ const Profile = () => {
                             </Card>
                         </motion.div>
 
-                        {/* System Override Switchboard */}
-                        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-3">
-                            <Card className="border border-white/[0.08] bg-white/[0.02] rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl">
-                                <CardHeader className="p-8 pb-4 bg-white/[0.01] border-b border-white/[0.05]">
-                                    <CardTitle className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic font-syne">
-                                        System Override switchboard
+                        {/* AI Performance Scorecard */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.25 }}
+                            className="md:col-span-3"
+                        >
+                            <UserScorecard />
+                        </motion.div>
+
+                        {/* Settings Section */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="md:col-span-3"
+                        >
+                            <Card className="border-none shadow-xl shadow-slate-200/40 rounded-[2.5rem] bg-white overflow-hidden">
+                                <CardHeader className="p-8 pb-4 bg-slate-50/50">
+                                    <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
+                                        System Configuration
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0">
