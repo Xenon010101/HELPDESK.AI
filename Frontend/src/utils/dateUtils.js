@@ -17,8 +17,6 @@ const parseDate = (dateStr) => {
     if (dateStr instanceof Date) {
         return isNaN(dateStr.getTime()) ? null : dateStr;
     }
-    return dateStr;
-  }
 
     // Convert to string if needed
     const str = String(dateStr).trim();
@@ -80,41 +78,40 @@ const parseDate = (dateStr) => {
     return date;
 };
 
+/**
+ * Format a date for the ticket timeline display.
+ * @param {string|Date|null|undefined} dateStr - Date string to format
+ * @returns {string} Formatted date string or 'Invalid Date'
+ */
 export const formatTimelineDate = (dateStr) => {
     const date = parseDate(dateStr);
     if (!date) return 'Invalid Date';
 
-export const formatTimelineDate = (dateStr) => {
-  const normalized = normalizeDateString(dateStr);
-  if (!normalized) return null;
-
-  const date = new Date(normalized);
-  if (isNaN(date.getTime())) return 'Invalid Date';
-
-  return date.toLocaleString(undefined, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+    return date.toLocaleString(undefined, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    });
 };
 
 /**
  * Returns the user's current timezone abbreviation (e.g. "IST", "PST").
- * Falls back to 'Local' when the Intl API is unavailable (very old browsers).
+ * Falls back to 'UTC' when the Intl API is unavailable (very old browsers).
  *
  * @returns {string}
  */
 export const getTimeZoneAbbr = () => {
-  try {
-    return (
-      new Intl.DateTimeFormat('en-US', {
-        timeZoneName: 'short',
-      })
-        .formatToParts(new Date())
-        .find(part => part.type === 'timeZoneName')?.value || 'UTC';
+    try {
+        return (
+            new Intl.DateTimeFormat('en-US', {
+                timeZoneName: 'short',
+            })
+                .formatToParts(new Date())
+                .find(part => part.type === 'timeZoneName')?.value || 'UTC'
+        );
     } catch (_e) {
         return 'UTC';
     }
@@ -122,20 +119,20 @@ export const getTimeZoneAbbr = () => {
 
 /**
  * Formats a date with its timezone abbreviation appended.
- * Falls back to 'Processing...' when dateStr is falsy.
+ * Falls back to 'Processing...' when dateStr is falsy or invalid.
  *
  * @param {string|Date|null|undefined} dateStr
  * @returns {string}
  */
 export const formatFullTimestamp = (dateStr) => {
-  const formatted = formatTimelineDate(dateStr);
-  if (!formatted) return 'Processing...';
-  return `${formatted} (${getTimeZoneAbbr()})`;
+    const formatted = formatTimelineDate(dateStr);
+    if (!formatted || formatted === 'Invalid Date') return 'Processing...';
+    return `${formatted} (${getTimeZoneAbbr()})`;
 };
 
 /**
  * Check if a date string is valid
- * @param {string} dateStr - Date string to validate
+ * @param {string|Date|null|undefined} dateStr - Date string to validate
  * @returns {boolean} - True if the date is valid
  */
 export const isValidDate = (dateStr) => {
@@ -144,7 +141,7 @@ export const isValidDate = (dateStr) => {
 
 /**
  * Get relative time string (e.g., "2 hours ago")
- * @param {string} dateStr - Date string
+ * @param {string|Date|null|undefined} dateStr - Date string
  * @returns {string} - Relative time string
  */
 export const getRelativeTime = (dateStr) => {
