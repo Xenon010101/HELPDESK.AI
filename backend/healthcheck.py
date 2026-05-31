@@ -20,15 +20,38 @@ from urllib.parse import urlparse
 
 # ─── Structured Logging ───────────────────────────────────────────────────────
 
+# FIX 1: Standard LogRecord attributes to exclude from structured payload.
+# Previously the formatter looked for record.extra (a custom attribute that
+# never exists on LogRecord), so extra keys passed via logger.info(..., extra={})
+# were silently dropped. Now we iterate record.__dict__ and collect every key
+# that is not a standard LogRecord field into the payload.
+_LOGRECORD_RESERVED = frozenset({
+    "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+    "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+    "created", "msecs", "relativeCreated", "thread", "threadName",
+    "processName", "process", "message", "taskName",
+})
+
+
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
+        # Ensure record.message is populated for the reserved-key check above.
+        record.message = record.getMessage()
         payload = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
-            "message": record.getMessage(),
+            "message": record.message,
         }
-        if hasattr(record, "extra"):
-            payload.update(record.extra)
+        # Merge any extra structured fields injected via logger(..., extra={...}).
+        for key, value in record.__dict__.items():
+            if key in _LOGRECORD_RESERVED:
+                continue
+            try:
+                json.dumps(value)          # probe serializability
+                payload[key] = value
+            except (TypeError, ValueError):
+                payload[key] = str(value)  # fall back to string for non-JSON types
+
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload)
@@ -61,36 +84,40 @@ class Config:
     timeout: float = 3.0
     retries: int = 3
     retry_delay: float = 1.0
-    retry_backoff: float = 2.0          # exponential backoff multiplier
+    retry_backoff: float = 2.0
     method: str = "GET"
     expected_status: tuple[int, int] = (200, 299)
     expected_body_contains: Optional[str] = None
     expected_json_key: Optional[str] = None
     expected_json_value: Optional[str] = None
     bearer_token: Optional[str] = None
-    basic_auth: Optional[str] = None    # "user:password"
+    basic_auth: Optional[str] = None
     extra_headers: dict[str, str] = field(default_factory=dict)
     tls_verify: bool = True
     tls_ca_bundle: Optional[str] = None
     response_time_warn_ms: float = 1000.0
-    output_format: str = "json"         # "json" | "text"
+    output_format: str = "json"
 
     @classmethod
     def from_env(cls) -> "Config":
-        def _float(key: str, default: float) -> float:
+        # FIX 2: Clamp numeric env values to safe minimums so negative inputs
+        # (e.g. HEALTHCHECK_RETRIES=-1) cannot break the retry loop or cause
+        # nonsensical behaviour. Previously any negative value was accepted as-is.
+        def _float(key: str, default: float, min_val: float = 0.0) -> float:
             try:
-                return float(os.environ.get(key, default))
+                val = float(os.environ.get(key, default))
+                return max(min_val, val)
             except (TypeError, ValueError):
                 return default
 
-        def _int(key: str, default: int) -> int:
+        def _int(key: str, default: int, min_val: int = 0) -> int:
             try:
-                return int(os.environ.get(key, default))
+                val = int(os.environ.get(key, default))
+                return max(min_val, val)
             except (TypeError, ValueError):
                 return default
 
         def _headers(raw: Optional[str]) -> dict[str, str]:
-            """Parse HEALTHCHECK_HEADERS='Key1:Val1,Key2:Val2'"""
             if not raw:
                 return {}
             result: dict[str, str] = {}
@@ -109,10 +136,10 @@ class Config:
 
         return cls(
             url=os.environ.get("HEALTHCHECK_URL", cls.url),
-            timeout=_float("HEALTHCHECK_TIMEOUT_SECONDS", cls.timeout),
-            retries=_int("HEALTHCHECK_RETRIES", cls.retries),
-            retry_delay=_float("HEALTHCHECK_RETRY_DELAY", cls.retry_delay),
-            retry_backoff=_float("HEALTHCHECK_RETRY_BACKOFF", cls.retry_backoff),
+            timeout=_float("HEALTHCHECK_TIMEOUT_SECONDS", cls.timeout, min_val=0.1),
+            retries=_int("HEALTHCHECK_RETRIES", cls.retries, min_val=0),
+            retry_delay=_float("HEALTHCHECK_RETRY_DELAY", cls.retry_delay, min_val=0.0),
+            retry_backoff=_float("HEALTHCHECK_RETRY_BACKOFF", cls.retry_backoff, min_val=0.0),
             method=os.environ.get("HEALTHCHECK_METHOD", cls.method).upper(),
             expected_status=status_range,
             expected_body_contains=os.environ.get("HEALTHCHECK_BODY_CONTAINS"),
@@ -123,7 +150,7 @@ class Config:
             extra_headers=_headers(os.environ.get("HEALTHCHECK_HEADERS")),
             tls_verify=os.environ.get("HEALTHCHECK_TLS_VERIFY", "true").lower() != "false",
             tls_ca_bundle=os.environ.get("HEALTHCHECK_CA_BUNDLE"),
-            response_time_warn_ms=_float("HEALTHCHECK_WARN_MS", cls.response_time_warn_ms),
+            response_time_warn_ms=_float("HEALTHCHECK_WARN_MS", cls.response_time_warn_ms, min_val=0.0),
             output_format=os.environ.get("HEALTHCHECK_OUTPUT", cls.output_format).lower(),
         )
 
@@ -192,9 +219,7 @@ def _build_ssl_context(cfg: Config) -> Optional[ssl.SSLContext]:
     return ctx
 
 
-def _validate_body(
-    body: str, cfg: Config
-) -> tuple[bool, Optional[str]]:
+def _validate_body(body: str, cfg: Config) -> tuple[bool, Optional[str]]:
     """Returns (valid, failure_reason)."""
     if cfg.expected_body_contains and cfg.expected_body_contains not in body:
         return False, f"body missing '{cfg.expected_body_contains}'"
@@ -229,15 +254,19 @@ def _single_attempt(cfg: Config, attempt: int) -> CheckResult:
             elapsed_ms = (time.perf_counter() - t0) * 1000
             result.status_code = resp.status
             result.response_time_ms = round(elapsed_ms, 2)
-            body = resp.read(4096).decode(errors="replace")
-            result.body_snippet = body[:200] if body else None
+
+            # FIX 4: Read the full response body instead of the first 4096 bytes.
+            # Previously resp.read(4096) could truncate large payloads, causing
+            # JSON parsing or substring-match failures on valid responses.
+            full_body = resp.read().decode(errors="replace")
+            result.body_snippet = full_body[:200] if full_body else None
 
             lo, hi = cfg.expected_status
             if not (lo <= resp.status <= hi):
                 result.failure_reason = f"status {resp.status} not in {lo}-{hi}"
                 return result
 
-            valid, reason = _validate_body(body, cfg)
+            valid, reason = _validate_body(full_body, cfg)
             if not valid:
                 result.failure_reason = reason
                 return result
@@ -245,17 +274,41 @@ def _single_attempt(cfg: Config, attempt: int) -> CheckResult:
             if elapsed_ms > cfg.response_time_warn_ms:
                 log.warning(
                     "Slow response",
-                    extra={"elapsed_ms": elapsed_ms, "warn_threshold_ms": cfg.response_time_warn_ms},
+                    extra={"elapsed_ms": elapsed_ms,
+                           "warn_threshold_ms": cfg.response_time_warn_ms},
                 )
 
             result.success = True
             return result
 
+    # FIX 3: HTTPError now mirrors the success path instead of unconditionally
+    # failing. Some servers (e.g. health endpoints returning 204 or custom ranges)
+    # return an HTTPError for codes that the caller considers acceptable.
+    # We read the body, check expected_status, and run _validate_body before
+    # deciding whether the result is a success or failure.
+    except urllib.error.HTTPError as exc:
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        result.status_code = exc.code
+        result.response_time_ms = round(elapsed_ms, 2)
+        try:
+            full_body = exc.read().decode(errors="replace")
+        except Exception:
+            full_body = ""
+        result.body_snippet = full_body[:200] if full_body else None
+
+        lo, hi = cfg.expected_status
+        if lo <= exc.code <= hi:
+            valid, reason = _validate_body(full_body, cfg)
+            if valid:
+                result.success = True
+                return result
+            result.failure_reason = reason
+        else:
+            result.failure_reason = f"HTTP error {exc.code}: {exc.reason}"
+        return result
+
     except TimeoutError:
         result.failure_reason = f"timed out after {cfg.timeout}s"
-    except urllib.error.HTTPError as exc:
-        result.status_code = exc.code
-        result.failure_reason = f"HTTP error {exc.code}: {exc.reason}"
     except urllib.error.URLError as exc:
         result.failure_reason = f"URL error: {exc.reason}"
     except ssl.SSLError as exc:
@@ -273,7 +326,7 @@ def run_check(cfg: Config) -> CheckResult:
     delay = cfg.retry_delay
     last: Optional[CheckResult] = None
 
-    for attempt in range(1, cfg.retries + 2):   # +2: initial + N retries
+    for attempt in range(1, cfg.retries + 2):
         last = _single_attempt(cfg, attempt)
         log.debug(
             "Attempt complete",
