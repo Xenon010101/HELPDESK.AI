@@ -101,6 +101,12 @@ export const formatTimelineDate = (dateStr) => {
   });
 };
 
+/**
+ * Returns the user's current timezone abbreviation (e.g. "IST", "PST").
+ * Falls back to 'Local' when the Intl API is unavailable (very old browsers).
+ *
+ * @returns {string}
+ */
 export const getTimeZoneAbbr = () => {
   try {
     return (
@@ -114,6 +120,13 @@ export const getTimeZoneAbbr = () => {
     }
 };
 
+/**
+ * Formats a date with its timezone abbreviation appended.
+ * Falls back to 'Processing...' when dateStr is falsy.
+ *
+ * @param {string|Date|null|undefined} dateStr
+ * @returns {string}
+ */
 export const formatFullTimestamp = (dateStr) => {
   const formatted = formatTimelineDate(dateStr);
   if (!formatted) return 'Processing...';
