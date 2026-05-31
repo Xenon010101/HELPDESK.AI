@@ -29,6 +29,10 @@ class DuplicateService:
         self._load_failed = False
         # In-memory store: list of (ticket_id, embedding, text)
         self._tickets: list[tuple[str, object, str]] = []
+        # Pre-computed embedding matrix for vectorized search
+        self._embedding_matrix: torch.Tensor | None = None
+        self._ticket_ids: list[str] = []
+        self._embedding_matrix_dirty: bool = True
         self.storage_file = os.path.join(os.path.dirname(__file__), "..", "data", "case_history_cache.json")
         os.makedirs(os.path.dirname(self.storage_file), exist_ok=True)
         # Lock for thread-safe access to _tickets and storage_file
@@ -145,6 +149,25 @@ class DuplicateService:
                 except OSError:
                     pass
 
+    def _rebuild_embedding_matrix(self):
+        """Rebuild the stacked embedding matrix from the ticket list.
+
+        This enables vectorized cosine similarity computation by stacking all
+        stored embeddings into a single 2D tensor, eliminating the per-ticket
+        loop in ``check_duplicate``.
+        """
+        if not self._tickets:
+            self._embedding_matrix = None
+            self._ticket_ids = []
+            self._embedding_matrix_dirty = False
+            return
+
+        tickets = list(self._tickets)  # consistent snapshot
+        self._ticket_ids = [tid for tid, _, _ in tickets]
+        embeddings = [emb for _, emb, _ in tickets]
+        self._embedding_matrix = torch.stack(embeddings)
+        self._embedding_matrix_dirty = False
+
     def add_ticket(self, ticket_id: str, text: str):
         """Add a ticket to the in-memory store and persist to disk.
 
@@ -239,6 +262,12 @@ class DuplicateService:
     def check_duplicate(self, text: str, threshold: float = None) -> dict:
         """
         Check if a ticket is a duplicate of any stored ticket.
+
+        Uses vectorized cosine similarity: all stored embeddings are stacked
+        into a single 2D tensor and compared against the query embedding in
+        one batched matrix operation, rather than looping over each stored
+        ticket individually.  This reduces the similarity computation from
+        O(n) individual tensor operations to a single O(1) matrix multiply.
 
         Args:
             text: The ticket text to check.
