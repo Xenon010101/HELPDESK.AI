@@ -16,6 +16,9 @@ const AdminLayout = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const { showHelp, setShowHelp } = useKeyboardShortcuts({ isAdmin: true });
 
+    // Rapid keyboard navigation (G+D, G+T, …) and Ctrl+F search focus.
+    useKeyboardShortcuts();
+
     return (
         <div className="flex h-screen bg-[#f8faf9] overflow-hidden font-sans">
             {/* Master Navigation Column (Responsive) */}
