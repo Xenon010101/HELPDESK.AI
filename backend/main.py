@@ -790,6 +790,10 @@ app.include_router(translation_router)
 from backend.routes.estimator import router as estimator_router
 app.include_router(estimator_router)
 
+# Tagging router (Issue #404)
+from tag_router import router as tag_router
+app.include_router(tag_router)
+
 
 # ---------------------------------------------------------------------------
 # Root & Health check
