@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
- 
+import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import useAuthStore from "../store/authStore";
 import { Eye, EyeOff, BrainCircuit, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 
 function Login() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -136,7 +139,9 @@ function Login() {
         <div
           className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none opacity-100 dark:opacity-20"
           style={{
-            background: 'radial-gradient(circle, rgba(34,160,69,0.12) 0%, transparent 70%)',
+            background: isDark
+              ? 'radial-gradient(circle, rgba(34,160,69,0.08) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(34,160,69,0.12) 0%, transparent 70%)',
           }}
         />
 
@@ -186,7 +191,7 @@ function Login() {
           className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 transition-all group"
           style={{ color: '#374151', fontWeight: 500, fontSize: '14px' }}
           onMouseEnter={(e) => e.currentTarget.style.color = '#16a34a'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
+          onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#a7d5c4' : '#374151'}
         >
           <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 group-hover:border-green-200 dark:group-hover:border-emerald-500/30 transition-all">
             <ArrowLeft className="w-4 h-4" />

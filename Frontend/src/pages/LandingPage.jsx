@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import TeamSection from '../components/landing/TeamSection';
+import ThemeToggle from '../components/shared/ThemeToggle';
 
 const CTA_TRANSITION = 'transition-all duration-200 ease-out transform-gpu will-change-transform';
 const CTA_SCALE = 'hover:scale-105 active:scale-[0.98]';
