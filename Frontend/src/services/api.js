@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 import { MOCK_TICKETS } from './mockData';
 import { API_CONFIG } from '../config';
 import { supabase } from '../lib/supabaseClient';
@@ -109,7 +109,7 @@ export const api = {
     try {
       const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
       // ALWAYS call the real backend for prediction if possible
-      const response = await axios.post(`${API_BASE_URL}/ai/analyze_ticket`, {
+      const response = await apiClient.post('/ai/analyze_ticket', {
         text: issueText,
         image_base64: imageBase64,
         image_text: "",
