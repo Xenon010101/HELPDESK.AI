@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import useAuthStore from '../store/authStore';
 import { ShieldX, LogOut, MailQuestion } from 'lucide-react';
 
@@ -18,41 +19,55 @@ const NotApproved = () => {
         : "Your admin registration request was rejected by the system administrator.";
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-8 md:p-12 text-center animate-in fade-in zoom-in duration-300">
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+            {/* Ambient Background Glow Layer */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-rose-500/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute inset-0 opacity-[0.02]"
+                style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
 
-                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6 ring-8 ring-red-50/50">
-                    <ShieldX size={40} />
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="w-full max-w-md bg-white/[0.02] border border-white/[0.06] rounded-[2.5rem] p-8 sm:p-12 text-center shadow-2xl backdrop-blur-xl relative z-10"
+            >
+                {/* Visual Anchor Indicator */}
+                <div className="w-20 h-20 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center justify-center text-rose-500 mx-auto mb-8 shadow-lg">
+                    <ShieldX size={36} />
                 </div>
 
-                <h1 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Access Denied</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-white mb-3 tracking-tight font-syne uppercase">
+                    Access Denied
+                </h1>
 
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-8">
-                    <p className="text-slate-600 text-sm font-medium leading-relaxed">
+                {/* Rejection Notification Context Block */}
+                <div className="bg-white/[0.01] border border-white/[0.05] rounded-2xl p-5 mb-8 text-left shadow-inner">
+                    <p className="text-slate-400 text-sm sm:text-base leading-relaxed font-medium m-0">
                         {message}
                     </p>
                 </div>
 
+                {/* Core Navigation Controls */}
                 <div className="space-y-4">
                     <button
                         onClick={() => window.location.href = 'mailto:support@helpdesk.ai'}
-                        className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+                        className="w-full h-13 bg-white/5 border border-white/10 hover:border-white/20 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider text-xs"
                     >
-                        <MailQuestion size={18} />
-                        Contact Support
+                        <MailQuestion size={16} className="text-slate-400" />
+                        <span>Contact Support</span>
                     </button>
 
                     <button
                         onClick={handleLogout}
-                        className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-200"
+                        className="w-full h-13 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-xl shadow-rose-600/10 active:scale-[0.99] transition-all flex items-center justify-center gap-2 border-none cursor-pointer uppercase tracking-wider text-xs"
                     >
-                        <LogOut size={18} />
-                        Sign Out
+                        <LogOut size={16} />
+                        <span>Sign Out</span>
                     </button>
                 </div>
-            </div>
+            </motion.div>
 
-            <p className="mt-8 text-sm font-medium text-slate-400">
+            <p className="mt-8 text-[10px] font-black uppercase tracking-[0.3em] text-slate-700 select-none">
                 HelpDesk.ai Security System
             </p>
         </div>

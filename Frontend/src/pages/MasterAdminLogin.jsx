@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Eye, EyeOff, ShieldAlert, Loader2, Lock } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import { supabase } from "../lib/supabaseClient";
 
 /**
- * MasterAdminLogin — Hidden portal login page.
- * Route: /master-admin-login
- * Not linked from anywhere in the public UI.
- *
- * Intentionally minimal and dark — no HelpDesk.ai branding.
+ * MasterAdminLogin — Restricted security gateway portal.
  */
 function MasterAdminLogin() {
     const [email, setEmail] = useState("");
@@ -21,7 +18,6 @@ function MasterAdminLogin() {
     const navigate = useNavigate();
     const { login, logout, profile } = useAuthStore();
 
-    // If already logged in as master_admin, skip straight to the dashboard
     useEffect(() => {
         if (profile?.role === "master_admin") {
             navigate("/master-admin/dashboard", { replace: true });
@@ -39,7 +35,6 @@ function MasterAdminLogin() {
         setIsSubmitting(true);
 
         try {
-            // Step 1: Supabase auth login
             const { user: authUser } = await login(email, password);
 
             if (!authUser) {
@@ -47,8 +42,6 @@ function MasterAdminLogin() {
                 return;
             }
 
-            // Step 2: Authoritative DB check — bypass the metadata fast-path
-            // in authStore.getProfile(), which might default role to 'user'.
             const { data: dbProfile, error: profileError } = await supabase
                 .from("profiles")
                 .select("role, status")
@@ -67,7 +60,6 @@ function MasterAdminLogin() {
                 return;
             }
 
-            // Step 3: Valid master admin — proceed
             navigate("/master-admin/dashboard", { replace: true });
         } catch (err) {
             setError(err.message || "Invalid credentials. Please try again.");
@@ -77,103 +69,111 @@ function MasterAdminLogin() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-6 font-sans">
-            {/* Ambient glow */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none fixed inset-0 overflow-hidden"
-            >
-                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 right-0 w-80 h-80 bg-violet-700/10 rounded-full blur-[100px]" />
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans relative overflow-hidden">
+            {/* Background Security Grid and Ambient Glows */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px]" />
+                <div className="absolute bottom-0 right-0 w-80 h-80 bg-violet-700/5 rounded-full blur-[100px]" />
+                <div className="absolute inset-0 opacity-[0.02]"
+                    style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '24px 24px' }} />
             </div>
 
-            <div className="relative w-full max-w-sm">
-                {/* Lock icon header */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="w-full max-w-sm"
+            >
+                {/* Minimal Shield Header */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-600/15 border border-indigo-500/25 flex items-center justify-center mb-4 shadow-lg shadow-indigo-900/30">
-                        <Lock className="w-6 h-6 text-indigo-400" />
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 shadow-xl">
+                        <Lock className="w-5 h-5 text-indigo-400" />
                     </div>
-                    <h1 className="text-white text-xl font-semibold tracking-tight">
+                    <h1 className="text-white text-2xl font-black tracking-tight font-syne">
                         Restricted Access
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
-                        Authorised personnel only
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
+                        Authorized Personnel Only
                     </p>
                 </div>
 
-                {/* Card */}
-                <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-8 shadow-2xl shadow-black/50 backdrop-blur-sm">
-                    {/* Error */}
-                    {error && (
-                        <div className="mb-5 flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                            <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                            <p className="text-red-400 text-sm font-medium">{error}</p>
-                        </div>
-                    )}
+                {/* Form Wrapper Card */}
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-[2rem] p-8 shadow-2xl backdrop-blur-xl relative">
+                    
+                    {/* Error Banner */}
+                    <AnimatePresence mode="wait">
+                        {error && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mb-5 flex items-start gap-3 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-left overflow-hidden"
+                            >
+                                <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                                <p className="text-rose-400 text-sm font-medium leading-snug">{error}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                        {/* Email */}
-                        <div>
+                        {/* Email Input */}
+                        <div className="space-y-2 text-left">
                             <label
                                 htmlFor="ma-email"
-                                className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+                                className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
                             >
-                                Email
+                                Security Email
                             </label>
                             <input
                                 id="ma-email"
                                 type="email"
                                 autoComplete="username"
-                                placeholder="admin@example.com"
+                                placeholder="root@infrastructure.local"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/15 transition-all"
+                                className="w-full h-12 bg-white/[0.02] border border-white/10 text-white placeholder:text-slate-700 rounded-xl px-4 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
                             />
                         </div>
 
-                        {/* Password */}
-                        <div>
+                        {/* Password Input */}
+                        <div className="space-y-2 text-left">
                             <label
                                 htmlFor="ma-password"
-                                className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+                                className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
                             >
-                                Password
+                                Cryptographic Key
                             </label>
                             <div className="relative">
                                 <input
                                     id="ma-password"
                                     type={showPassword ? "text" : "password"}
                                     autoComplete="current-password"
-                                    placeholder="••••••••••"
+                                    placeholder="••••••••••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/15 transition-all"
+                                    className="w-full h-12 bg-white/[0.02] border border-white/10 text-white placeholder:text-slate-700 rounded-xl px-4 pr-12 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-2 border-none bg-transparent cursor-pointer"
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="w-4 h-4" />
-                                    ) : (
-                                        <Eye className="w-4 h-4" />
-                                    )}
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Submit */}
+                        {/* Submit Action */}
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-indigo-900/30 active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full h-12 mt-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-xl shadow-indigo-600/10 active:scale-[0.99] flex items-center justify-center gap-2 border-none cursor-pointer uppercase tracking-wider"
                         >
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Verifying…
+                                    <span>Verifying...</span>
                                 </>
                             ) : (
                                 "Authenticate"
@@ -182,11 +182,11 @@ function MasterAdminLogin() {
                     </form>
                 </div>
 
-                {/* Discreet footer */}
-                <p className="text-center text-slate-700 text-xs mt-6 select-none">
-                    Unauthorised access attempts are logged.
+                {/* Footnote Warning */}
+                <p className="text-center text-slate-700 text-[10px] uppercase tracking-widest mt-6 select-none font-medium">
+                    Unauthorized access entry vectors are recorded.
                 </p>
-            </div>
+            </motion.div>
         </div>
     );
 }
