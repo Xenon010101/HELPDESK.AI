@@ -14,12 +14,16 @@ import warnings
 import logging
 import hashlib
 from contextlib import asynccontextmanager
+import re
+import time
+import contextlib
+from logging.handlers import RotatingFileHandler
 
 # Suppress harmless PyTorch CPU pin_memory warning
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
 # HF Rebuild Trigger: 2026-03-08-2030
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -474,6 +478,60 @@ async def analyze_bug(request: BugReportAnalysisRequest):
 # ---------------------------------------------------------------------------
 CORRECTIONS_LOG_PATH = Path(__file__).parent / "data" / "corrections_log.json"
 
+# Initialize structured rotating logger
+CORRECTIONS_LOG_DIR = CORRECTIONS_LOG_PATH.parent
+CORRECTIONS_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+structured_logger = logging.getLogger("corrections_structured")
+structured_logger.setLevel(logging.INFO)
+structured_logger.propagate = False
+
+# Rotate at 1MB with a backup count of 5
+rotating_handler = RotatingFileHandler(
+    CORRECTIONS_LOG_DIR / "corrections_structured.log",
+    maxBytes=1024 * 1024,
+    backupCount=5,
+    encoding="utf-8"
+)
+rotating_handler.setFormatter(logging.Formatter('%(message)s'))
+structured_logger.addHandler(rotating_handler)
+
+
+def redact_pii(text: str) -> str:
+    """Redact standard email and phone number patterns to protect user privacy."""
+    if not text:
+        return text
+    # Email pattern
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    # Phone number pattern (7 to 15 digit formats)
+    phone_pattern = r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'
+    
+    redacted = re.sub(email_pattern, "[EMAIL_REDACTED]", text)
+    redacted = re.sub(phone_pattern, "[PHONE_REDACTED]", redacted)
+    return redacted
+
+
+@contextlib.contextmanager
+def file_lock_context(lock_path: Path, timeout: float = 10.0):
+    """Acquire a cross-process/thread atomic lock using directory creation."""
+    start_time = time.time()
+    while True:
+        try:
+            os.mkdir(str(lock_path))
+            break
+        except (FileExistsError, PermissionError):
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Could not acquire log lock within timeout period.")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        try:
+            os.rmdir(str(lock_path))
+        except FileNotFoundError:
+            pass
+
+
 @app.post("/ai/log_correction")
 async def log_correction(raw_request: Request):
     """Log an admin correction when the AI prediction differs from the human decision."""
@@ -486,8 +544,8 @@ async def log_correction(raw_request: Request):
     print(f"[CORRECTION RECEIVED] Payload keys: {list(body.keys())}")
 
     ticket_id = str(body.get("ticket_id", "unknown"))
-    original_text = str(body.get("original_text", ""))
-    ocr_text = str(body.get("ocr_text", ""))
+    original_text = redact_pii(str(body.get("original_text", "")))
+    ocr_text = redact_pii(str(body.get("ocr_text", "")))
     confidence = float(body.get("confidence") or 0.0)
     original_prediction = body.get("original_prediction") or {}
     corrected_prediction = body.get("corrected_prediction") or {}
@@ -512,24 +570,45 @@ async def log_correction(raw_request: Request):
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
 
+    lock_path = CORRECTIONS_LOG_PATH.parent / "corrections_log.lock"
+    tmp_path = CORRECTIONS_LOG_PATH.with_suffix(".json.tmp")
+
     try:
-        if CORRECTIONS_LOG_PATH.exists() and CORRECTIONS_LOG_PATH.stat().st_size > 2:
-            with open(CORRECTIONS_LOG_PATH, "r", encoding="utf-8") as f:
-                logs = json.load(f)
-        else:
-            logs = []
+        # 1. Structured log with rotation
+        structured_logger.info(json.dumps(entry))
 
-        logs.append(entry)
+        # 2. Atomic append to JSON array using folder-based locking
+        with file_lock_context(lock_path):
+            if CORRECTIONS_LOG_PATH.exists() and CORRECTIONS_LOG_PATH.stat().st_size > 2:
+                try:
+                    with open(CORRECTIONS_LOG_PATH, "r", encoding="utf-8") as f:
+                        logs = json.load(f)
+                except Exception as parse_error:
+                    print(f"[WARNING] Failed to parse corrections log, starting fresh: {parse_error}")
+                    logs = []
+            else:
+                logs = []
 
-        with open(CORRECTIONS_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(logs, f, indent=2)
+            logs.append(entry)
+
+            # Write atomically using a temporary file
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(logs, f, indent=2)
+            
+            # Atomic rename (replace existing file)
+            os.replace(tmp_path, CORRECTIONS_LOG_PATH)
 
         print(f"[CORRECTION SAVED] Ticket ID: {ticket_id} | Changed: {changed_fields}")
         return {"status": "saved", "changed_fields": changed_fields}
 
     except Exception as e:
-        print(f"[CORRECTION ERROR] Could not save: {e}")
-        return {"status": "error", "message": str(e)}
+        print(f"[CORRECTION ERROR] Failed to log correction: {e}")
+        if tmp_path.exists():
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+        return {"status": "error", "message": f"Failed to log correction: {str(e)}"}
 
 
 # ---------------------------------------------------------------------------
