@@ -757,6 +757,16 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# ---------------------------------------------------------------------------
+# Security Headers Middleware — defense-in-depth against XSS (#739)
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    for key, value in get_security_headers().items():
+        response.headers[key] = value
+    return response
+
 # CORS — locked to production + local dev only
 app.add_middleware(
     CORSMiddleware,
@@ -2067,7 +2077,7 @@ async def legacy_analyze_and_save(request_body: TicketRequest):
 
 @app.post("/ai/analyze-v2")
 async def analyze_ticket_v2(request: TicketRequest):
-    text = request.text
+    text = sanitize_text(request.text) or ""
     try:
         prediction = classifier_v2.predict(text)
         return {
