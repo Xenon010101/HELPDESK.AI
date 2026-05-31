@@ -893,26 +893,6 @@ METRICS_ALLOWED_IPS = {
     if ip.strip()
 }
 
-instrumentator = Instrumentator(
-    should_group_status_codes=True,
-    should_group_untemplated=True,
-    excluded_handlers=["/metrics", "/health"],
-)
-instrumentator.instrument(app)
-
-# Translation service routes
-from backend.routes.translation import router as translation_router
-app.include_router(translation_router)
-
-# Response time estimator routes
-from backend.routes.estimator import router as estimator_router
-app.include_router(estimator_router)
-
-# Tagging router (Issue #404)
-from tag_router import router as tag_router
-app.include_router(tag_router)
-
-
 # ---------------------------------------------------------------------------
 # Custom Swagger UI with branding
 # ---------------------------------------------------------------------------
@@ -977,7 +957,7 @@ instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
 # Instrument the app
-instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+instrumentator.instrument(app)
 
 # Root & Health check
 # ---------------------------------------------------------------------------
