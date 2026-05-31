@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createPersistedStore } from './persistenceMiddleware';
 import { supabase } from '../lib/supabaseClient';
 import { API_CONFIG } from '../config';
 import useTicketStore from './ticketStore';
@@ -59,7 +59,7 @@ const getProfileCache = (profile) => {
 };
 
 const useAuthStore = create(
-    persist(
+    createPersistedStore('auth',
         (set, get) => ({
             // --- AUTH STATE ---
             user: null,
@@ -415,7 +415,6 @@ const useAuthStore = create(
             }
         }),
         {
-            name: 'auth-storage',
             partialize: (state) => ({
                 // Cache display-only profile fields. Role/status must come from the DB.
                 profile: getProfileCache(state.profile)

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createPersistedStore } from './persistenceMiddleware';
 
 const useTicketStore = create(
     persist(
@@ -130,11 +130,8 @@ const useTicketStore = create(
             markNotificationsRead: () => set((state) => ({
                 notifications: (state.notifications || []).map(n => ({ ...n, read: true }))
             })),
-            clearTicket: () => set({ aiTicket: null, activeTicket: null, autoResolvedTickets: [] }),
-        }),
-        {
-            name: 'ticket-storage', // unique name for localStorage key
-        }
+            clearNotifications: () => set({ notifications: [] }),
+        })
     )
 );
 
