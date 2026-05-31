@@ -6,6 +6,7 @@ import ThemeToggle from '../ThemeToggle';
 function DemoModal({ onClose }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const videoId = "Bj00LzeMylM";
+    const navigate = useNavigate();
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
@@ -21,7 +22,6 @@ function DemoModal({ onClose }) {
                     <X className="w-5 h-5" />
                 </button>
 
-                {/* Video Container */}
                 <div className="aspect-video w-full bg-black flex items-center justify-center relative group">
                     {!isPlaying ? (
                         <div
@@ -59,16 +59,16 @@ function DemoModal({ onClose }) {
                 </div>
 
                 <div className="p-6 bg-gray-50 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl font-extrabold text-gray-900 dark:text-white italic uppercase tracking-tight">Full Platform Walkthrough</h2>
+                    <div className="text-left">
+                        <h2 className="text-xl font-extrabold text-gray-900 dark:text-white uppercase tracking-tight">Full Platform Walkthrough</h2>
                         <p className="text-gray-500 dark:text-slate-400 text-xs font-medium">Experience the synergy of AI and human expertise.</p>
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
                         <button
-                            onClick={() => { onClose(); window.location.href = '/admin-signup'; }}
-                            className="flex-1 md:px-8 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-black italic uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                            onClick={() => { onClose(); navigate('/admin-signup'); }}
+                            className="flex-1 md:px-8 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-6 rounded-xl font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 border-none cursor-pointer"
                         >
-                            Start Free <ArrowRight className="w-4 h-4 ml-1" />
+                            Start Free <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 </div>

@@ -26,45 +26,41 @@ import Promote from '@/components/landing/Promote';
 function DemoModal({ onClose }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const videoId = "Bj00LzeMylM";
+    const navigate = useNavigate();
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
             <div
-                className="relative bg-gray-950 rounded-3xl border border-white/10 shadow-2xl w-full max-w-4xl overflow-hidden z-10 animate-in fade-in zoom-in duration-300"
+                className="relative bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl overflow-hidden z-10 animate-in fade-in zoom-in duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white bg-white/10 rounded-full p-2 transition-colors z-30"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/10 dark:bg-slate-800 rounded-full p-2 transition-colors z-30"
                 >
                     <X className="w-5 h-5" />
                 </button>
 
-                {/* Video Container */}
                 <div className="aspect-video w-full bg-black flex items-center justify-center relative group">
                     {!isPlaying ? (
                         <div
                             className="absolute inset-0 cursor-pointer overflow-hidden"
                             onClick={() => setIsPlaying(true)}
                         >
-                            {/* YouTube Thumbnail Poster */}
                             <img
                                 src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                                 alt="Video Thumbnail"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
-                            {/* Overlay Gradient */}
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300" />
 
-                            {/* Play Button Overlay */}
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-600/50 transform group-hover:scale-110 transition-transform duration-300">
                                     <Play className="w-8 h-8 text-white fill-white ml-1" />
                                 </div>
                             </div>
 
-                            {/* Badge */}
                             <div className="absolute bottom-6 left-6 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
                                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                                 <span className="text-xs font-black text-white uppercase tracking-widest">Click to Watch</span>
@@ -82,17 +78,17 @@ function DemoModal({ onClose }) {
                     )}
                 </div>
 
-                <div className="p-6 bg-gray-900 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl font-extrabold text-white italic uppercase tracking-tight">Full Platform Walkthrough</h2>
-                        <p className="text-gray-400 text-xs font-medium">Experience the synergy of AI and human expertise.</p>
+                <div className="p-6 bg-gray-50 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="text-left">
+                        <h2 className="text-xl font-extrabold text-gray-900 dark:text-white uppercase tracking-tight">Full Platform Walkthrough</h2>
+                        <p className="text-gray-500 dark:text-slate-400 text-xs font-medium">Experience the synergy of AI and human expertise.</p>
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
                         <button
-                            onClick={() => { onClose(); window.location.href = '/admin-signup'; }}
-                            className="flex-1 md:px-8 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-black italic uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                            onClick={() => { onClose(); navigate('/admin-signup'); }}
+                            className="flex-1 md:px-8 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-6 rounded-xl font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 border-none cursor-pointer"
                         >
-                            Start Free <ArrowRight className="w-4 h-4 ml-1" />
+                            Start Free <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
