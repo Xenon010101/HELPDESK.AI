@@ -16,6 +16,7 @@ import hashlib
 from contextlib import asynccontextmanager
 
 # Suppress harmless PyTorch CPU pin_memory warning
+from encryption import encrypt_pii, decrypt_pii, is_encrypted
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
 # HF Rebuild Trigger: 2026-03-08-2030
@@ -546,6 +547,12 @@ async def get_tickets(company_id: str | None = None):
         query = query.eq("company_id", company_id)
         
     res = query.execute()
+    # Decrypt PII fields (subject and description) after retrieving
+    for ticket in res.data:
+        if ticket.get("subject") and is_encrypted(ticket["subject"]):
+            ticket["subject"] = decrypt_pii(ticket["subject"])
+        if ticket.get("description") and is_encrypted(ticket["description"]):
+            ticket["description"] = decrypt_pii(ticket["description"])
     return res.data
 
 @app.post("/tickets/save")
@@ -605,6 +612,11 @@ async def save_ticket(request_body: TicketSaveRequest):
         logger.info(f"Tenant linkage: user_hash={user_hash}, company_id={final_data.get('company_id')}")
 
 
+        # Encrypt PII fields (subject and description) before storing
+        if final_data.get("subject"):
+            final_data["subject"] = encrypt_pii(final_data["subject"])
+        if final_data.get("description"):
+            final_data["description"] = encrypt_pii(final_data["description"])
         res = supabase.table("tickets").insert(final_data).execute()
         
         if not res.data:
