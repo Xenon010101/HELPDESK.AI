@@ -117,8 +117,8 @@ class TestGetReader:
         original = ocr_mod._reader
         mock_reader = MagicMock()
         ocr_mod._reader = mock_reader
-
-        result = ocr_mod._get_reader()
-        assert result is mock_reader
-
-        ocr_mod._reader = original
+        try:
+            result = ocr_mod._get_reader()
+            assert result is mock_reader
+        finally:
+            ocr_mod._reader = original
