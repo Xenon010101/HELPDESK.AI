@@ -254,7 +254,7 @@ const AdminAnalytics = () => {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] italic tracking-widest">No activity data</div>
+                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-xs italic tracking-widest">No activity data</div>
                             )}
                         </div>
                     </div>
@@ -281,7 +281,7 @@ const AdminAnalytics = () => {
                                         </PieChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] italic tracking-widest">No resolution data</div>
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-xs italic tracking-widest">No resolution data</div>
                                 )}
                             </div>
                         </div>
@@ -311,7 +311,7 @@ const AdminAnalytics = () => {
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] italic tracking-widest">No category data</div>
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-black uppercase text-xs italic tracking-widest">No category data</div>
                                 )}
                             </div>
                         </div>
@@ -323,7 +323,7 @@ const AdminAnalytics = () => {
                             <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase italic">
                                 <AlertCircle size={18} className="text-amber-500" /> AI Correction Log
                             </h3>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Categories with manual corrections</p>
+                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Categories with manual corrections</p>
                         </div>
                         <div className="h-[250px]">
                             {aiStats.misclassifiedCategories.length > 0 ? (
@@ -339,7 +339,7 @@ const AdminAnalytics = () => {
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center flex-col gap-3">
                                     <ShieldCheck className="w-12 h-12 text-emerald-200" />
-                                    <p className="text-slate-300 font-black uppercase text-[10px] italic tracking-widest text-center">AI classifications are performing optimally.</p>
+                                    <p className="text-slate-300 font-black uppercase text-xs italic tracking-widest text-center">AI classifications are performing optimally.</p>
                                 </div>
                             )}
                         </div>

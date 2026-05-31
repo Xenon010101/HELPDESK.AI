@@ -35,16 +35,14 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
 
     return (
         <aside 
-            className={`${isMobile ? 'w-full h-full' : 'fixed left-0 top-0 h-full'} z-40 transition-all duration-300 overflow-hidden flex flex-col`}
+            className={`${isMobile ? 'w-full h-full' : 'fixed left-0 top-0 h-full'} z-40 transition-all duration-300 overflow-hidden flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 shadow-sm`}
             style={{
                 width: isMobile ? '100%' : (isCollapsed ? '80px' : '260px'),
-                background: '#ffffff',
-                borderRight: '1px solid #f0fdf4',
                 boxShadow: '2px 0 12px rgba(0,0,0,0.04)'
             }}
         >
             {/* Logo Section */}
-            <div className="p-6 border-b border-gray-50 flex items-center" style={{ justifyContent: showLabels ? 'space-between' : 'center', padding: isCollapsed && !isMobile ? '24px 16px' : '24px 32px' }}>
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center" style={{ justifyContent: showLabels ? 'space-between' : 'center', padding: isCollapsed && !isMobile ? '24px 16px' : '24px 32px' }}>
                 <div className="flex items-center gap-3">
                     <img 
                         src="/favicon.png" 
@@ -58,7 +56,7 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
                     />
                     {showLabels && (
                         <div className="animate-in fade-in duration-500 flex flex-col justify-center">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Admin Console</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em]">Admin Console</p>
                         </div>
                     )}
                 </div>
@@ -98,12 +96,11 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
                             display: 'flex', alignItems: 'center', gap: '12px',
                             borderRadius: '10px', padding: isCollapsed && !isMobile ? '10px' : '9px 14px',
                             color: isActive ? '#15803d' : '#6b7280',
-                            background: isActive ? '#f0fdf4' : 'transparent',
                             fontWeight: isActive ? 600 : 500,
                             textDecoration: 'none', transition: 'all 0.2s ease',
                             justifyContent: isCollapsed && !isMobile ? 'center' : 'flex-start'
                         })}
-                        className="group hover:bg-gray-50 relative"
+                        className="group hover:bg-slate-100 dark:hover:bg-white/5 relative"
                     >
                         <item.icon size={20} className="shrink-0 transition-transform group-hover:scale-110" />
                         {showLabels && (
@@ -122,7 +119,7 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
             </nav>
 
             {/* Bottom Profile / Logout Shortcut */}
-            <div className="p-4 border-t border-gray-50 space-y-1.5 pb-8 flex flex-col items-stretch">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-1.5 pb-8 flex flex-col items-stretch">
                 <NavLink
                     to="/admin/settings"
                     onClick={isMobile ? onClose : undefined}
@@ -135,7 +132,7 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
                         textDecoration: 'none', transition: 'all 0.2s ease',
                         justifyContent: isCollapsed && !isMobile ? 'center' : 'flex-start'
                     })}
-                    className="group hover:bg-gray-50"
+                    className="group hover:bg-slate-100 dark:hover:bg-white/5"
                 >
                     <Settings size={20} className="shrink-0 group-hover:rotate-45 transition-transform duration-300" />
                     {showLabels && <span className="text-sm tracking-tight animate-in fade-in duration-300">Settings</span>}

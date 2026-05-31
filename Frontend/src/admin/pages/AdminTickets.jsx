@@ -220,7 +220,7 @@ const AdminTickets = () => {
             </div>
 
             {/* 2. Advanced Filtering Station */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 space-y-6">
+            <div className="bg-white dark:bg-slate-950 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Search Field */}
                     <div className="relative group lg:col-span-1">
@@ -230,7 +230,7 @@ const AdminTickets = () => {
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         />
                     </div>
 
@@ -269,7 +269,7 @@ const AdminTickets = () => {
             </div>
 
             {/* 3. High-Density Data Terminal */}
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]">
+            <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden relative min-h-[400px]">
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
                         <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
@@ -280,33 +280,33 @@ const AdminTickets = () => {
                     <div className="p-12 text-center text-red-500 space-y-4">
                         <AlertCircle className="mx-auto w-12 h-12" />
                         <p className="font-bold uppercase tracking-widest text-xs">{error}</p>
-                        <button onClick={fetchTickets} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Retry</button>
+                        <button onClick={fetchTickets} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest">Retry</button>
                     </div>
                 )}
 
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-slate-50/80 border-b border-slate-100">
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700">
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">
                                     <div className="flex items-center gap-2">
                                         ID
                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                                     </div>
                                 </th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">User</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">AI Score</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Agent</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA</th>
-                                <th className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">User</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Subject</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Priority</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">AI Score</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Agent</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="px-6 py-5 text-left text-xs font-black text-slate-400 uppercase tracking-widest">SLA</th>
+                                <th className="px-6 py-5 text-center text-xs font-black text-slate-400 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredTickets.map((ticket) => (
-                                <tr key={ticket.id} className={`hover:bg-slate-50/50 transition-colors group ${isUpdating === ticket.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <tr key={ticket.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group ${isUpdating === ticket.id ? 'opacity-50 pointer-events-none' : ''}`}>
                                     {/* Ticket ID */}
                                     <td className="px-6 py-6">
                                         <span className="font-mono text-xs font-black text-emerald-600">#{formatTicketId(ticket.id)}</span>
@@ -330,7 +330,7 @@ const AdminTickets = () => {
                                                 <span className="text-xs font-black text-slate-800 tracking-tight italic uppercase truncate max-w-[120px]">
                                                     {ticket.creator?.full_name || ticket.profiles?.full_name || 'System'}
                                                 </span>
-                                                <span className="text-[10px] font-bold text-slate-400 lowercase truncate max-w-[120px]">
+                                                <span className="text-xs font-bold text-slate-400 lowercase truncate max-w-[120px]">
                                                     {ticket.creator?.email || ticket.profiles?.email || '—'}
                                                 </span>
                                             </div>
@@ -343,7 +343,7 @@ const AdminTickets = () => {
                                             <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={ticket.summary || ticket.subject}>
                                                 {ticket.summary || ticket.subject}
                                             </span>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                                 {ticket.category} 
                                                 <span className="text-[9px] font-medium text-slate-300">• {formatTimelineDate(ticket.created_at)}</span>
                                             </span>
@@ -385,7 +385,7 @@ const AdminTickets = () => {
                                     </td>
 
                                     {/* Assigned Team (Editable) */}
-                                    <td className="px-6 py-6 text-emerald-600 font-bold text-[10px]">
+                                    <td className="px-6 py-6 text-emerald-600 font-bold text-xs">
                                         {ticket.assigned_team || 'General'}
                                     </td>
 
@@ -399,7 +399,7 @@ const AdminTickets = () => {
                                                         assigned_agent_id: e.target.value,
                                                         status: 'in progress'
                                                     })}
-                                                    className="bg-transparent text-[10px] font-black text-indigo-600 uppercase tracking-tight italic border-none focus:ring-0 cursor-pointer hover:underline"
+                                                    className="bg-transparent text-xs font-black text-indigo-600 uppercase tracking-tight italic border-none focus:ring-0 cursor-pointer hover:underline"
                                                 >
                                                     {agents.map(a => (
                                                         <option key={a.id} value={a.id}>{a.full_name}</option>
@@ -426,7 +426,7 @@ const AdminTickets = () => {
                                             <Select
                                                 value={String(ticket.status || 'open').toLowerCase()}
                                                 onChange={(e) => handleUpdateTicket(ticket.id, { status: e.target.value })}
-                                                buttonClassName="bg-transparent text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none cursor-pointer flex justify-between items-center w-full"
+                                                buttonClassName="bg-transparent text-xs font-black text-slate-600 uppercase tracking-widest outline-none cursor-pointer flex justify-between items-center w-full"
                                                 options={statuses.filter(s => s !== 'All').map(s => ({ value: s.toLowerCase(), label: s }))}
                                             />
                                         </div>

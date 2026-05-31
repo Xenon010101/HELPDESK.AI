@@ -185,7 +185,7 @@ const AdminTicketDetail = () => {
             <AlertCircle className="w-16 h-16 text-red-500" />
             <h3 className="text-xl font-black text-slate-900 uppercase italic">Access Denied</h3>
             <p className="text-sm text-slate-500 max-w-xs">{error}</p>
-            <button onClick={() => navigate('/admin/tickets')} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Return to Base</button>
+            <button onClick={() => navigate('/admin/tickets')} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest">Return to Base</button>
         </div>
     );
 
