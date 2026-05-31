@@ -177,3 +177,35 @@ async def auth_logout(request: Request, response: Response):
 @router.get("/me")
 async def auth_me(user: dict = Depends(get_current_user)):
     return {"user": user}
+
+
+@router.get("/me/role")
+async def auth_me_role(user: dict = Depends(get_current_user)):
+    """Return the authoritative role and status from the database profiles table.
+
+    This endpoint is the single source of truth for authorization decisions.
+    Client-side caches (localStorage, Zustand persist) must NOT be trusted for
+    role-based access control — always call this endpoint instead.
+    """
+    from supabase import create_client as _create_client
+
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
+    if not url or not key:
+        raise HTTPException(status_code=503, detail="Auth backend not configured")
+
+    user_id = user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user session")
+
+    try:
+        client = _create_client(url, key)
+        result = client.table("profiles").select("role, status").eq("id", user_id).single().execute()
+        data = getattr(result, "data", None) or {}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Profile lookup failed: {exc}") from exc
+
+    return {
+        "role": data.get("role", "user"),
+        "status": data.get("status", "pending_email_verification"),
+    }
