@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
 # HF Rebuild Trigger: 2026-03-08-2030
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -27,6 +27,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.encoders import jsonable_encoder
 import asyncio
+import redis
+
 from pathlib import Path
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -50,6 +52,17 @@ except (ImportError, Exception) as e:
     supabase = None
     Client = None
 
+# Initialize Redis Client
+redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+try:
+    redis_client = redis.from_url(redis_url, decode_responses=True)
+    redis_client.ping()
+    print("[Startup] Redis Cache connected successfully.")
+except Exception as e:
+    print(f"[WARNING] Redis initialization failed: {e}")
+    redis_client = None
+
+
 # Ensure project root is on path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -72,15 +85,34 @@ def get_system_settings(company_id: str) -> dict:
     }
     if not supabase or not company_id:
         return defaults
+
+    # Try fetching from Redis Cache
+    cache_key = f"system_settings:{company_id}"
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception as ce:
+            print(f"[WARNING] Redis read error for system_settings:{company_id}: {ce}")
+
     try:
         res = supabase.table("system_settings").select(
             "ai_confidence_threshold, duplicate_sensitivity, enable_auto_resolve"
         ).eq("company_id", company_id).single().execute()
         if res.data:
-            return {**defaults, **res.data}
+            result = {**defaults, **res.data}
+            # Cache the result in Redis with 5 minutes expiration
+            if redis_client:
+                try:
+                    redis_client.setex(cache_key, 300, json.dumps(result))
+                except Exception as ce:
+                    print(f"[WARNING] Redis write error for system_settings:{company_id}: {ce}")
+            return result
     except Exception as e:
         print(f"[WARNING] Could not fetch system_settings for company_id={company_id}: {e}")
     return defaults
+
 class TicketRequest(BaseModel):
     text: str
     image_base64: str = ""
@@ -540,13 +572,32 @@ async def get_tickets(company_id: str | None = None):
     """Fetch persistent tickets from Supabase."""
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
-    
+
+    # Try fetching from Redis Cache
+    cache_key = f"tickets:list:{company_id or 'all'}"
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception as ce:
+            print(f"[WARNING] Redis read error for {cache_key}: {ce}")
+
     query = supabase.table("tickets").select("*").order("created_at", desc=True)
     if company_id:
         query = query.eq("company_id", company_id)
         
     res = query.execute()
+
+    # Cache the result in Redis with 5 minutes expiration
+    if redis_client and res.data:
+        try:
+            redis_client.setex(cache_key, 300, json.dumps(res.data))
+        except Exception as ce:
+            print(f"[WARNING] Redis write error for {cache_key}: {ce}")
+
     return res.data
+
 
 @app.post("/tickets/save")
 async def save_ticket(request_body: TicketSaveRequest):
@@ -642,6 +693,18 @@ async def save_ticket(request_body: TicketSaveRequest):
             "message": msg
         }).execute()
         
+        # Invalidate Redis list caches upon new ticket creation
+        if redis_client:
+            try:
+                company_id = final_data.get("company_id")
+                keys_to_delete = ["tickets:list:all"]
+                if company_id:
+                    keys_to_delete.append(f"tickets:list:{company_id}")
+                redis_client.delete(*keys_to_delete)
+                print(f"[Redis Cache] Invalidated list caches on save: {keys_to_delete}")
+            except Exception as ce:
+                print(f"[WARNING] Redis cache invalidation error on save: {ce}")
+
         response = {"status": "success", "ticket_id": ticket_id, "duplicate_indexed": duplicate_indexed}
         if duplicate_index_warning:
             response["duplicate_index_warning"] = duplicate_index_warning
@@ -656,11 +719,30 @@ async def get_ticket_by_id(ticket_id: str):
     """Fetch single persistent ticket."""
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
-    
+
+    # Try fetching from Redis Cache
+    cache_key = f"tickets:detail:{ticket_id}"
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception as ce:
+            print(f"[WARNING] Redis read error for {cache_key}: {ce}")
+
     res = supabase.table("tickets").select("*").eq("id", ticket_id).single().execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Cache the result in Redis with 5 minutes expiration
+    if redis_client and res.data:
+        try:
+            redis_client.setex(cache_key, 300, json.dumps(res.data))
+        except Exception as ce:
+            print(f"[WARNING] Redis write error for {cache_key}: {ce}")
+
     return res.data
+
 
 
 @app.post("/tickets", response_model=TicketRecord)
@@ -686,6 +768,18 @@ async def update_ticket(ticket_id: str, updates: dict):
             ticket_dict.update(updates)
             updated_ticket = TicketRecord(**ticket_dict)
             TICKETS_DB[i] = updated_ticket
+            
+            # Invalidate Redis cache when ticket is updated
+            if redis_client:
+                try:
+                    redis_client.delete(f"tickets:detail:{ticket_id}")
+                    list_keys = redis_client.keys("tickets:list:*")
+                    if list_keys:
+                        redis_client.delete(*list_keys)
+                    print(f"[Redis Cache] Invalidated detail and list caches on update for ticket: {ticket_id}")
+                except Exception as ce:
+                    print(f"[WARNING] Redis cache invalidation error on update: {ce}")
+                    
             return updated_ticket
     
     raise HTTPException(status_code=404, detail="Ticket not found")
