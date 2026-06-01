@@ -923,7 +923,7 @@ async def analyze_only(request_body: TicketRequest):
         image_description=gemini_analysis["image_description"],
         ocr_text=gemini_analysis["ocr_text"],
         image_url=request_body.image_url,
-        highlights=entities,
+        highlights=[e["text"] for e in entities],
         timeline=timeline,
         env_metadata=env_metadata,
         sla_breach_at=sla_breach_dt.isoformat() + "Z"
