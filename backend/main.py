@@ -18,6 +18,8 @@ import re
 import tempfile
 from contextlib import asynccontextmanager
 
+logger = logging.getLogger(__name__)
+
 # Suppress harmless PyTorch CPU pin_memory warning
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
@@ -34,6 +36,8 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest, CollectorReg
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.encoders import jsonable_encoder
 import asyncio
+import aiofiles
+from filelock import FileLock
 from pathlib import Path
 from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
@@ -439,6 +443,18 @@ class TicketSaveRequest(BaseModel):
     routing_confidence: float = 0.0
     source: str = "text"
 
+
+
+class RatingRequest(BaseModel):
+    ticket_id: str
+    rating: int
+    feedback: str | None = None
+
+class AgentCSATResponse(BaseModel):
+    agent_id: str
+    avg_rating: float
+    total_ratings: int
+    ratings_distribution: dict
 
 
 class DuplicateInfo(BaseModel):
@@ -1248,6 +1264,37 @@ async def analyze_bug(request: BugReportAnalysisRequest):
 # ---------------------------------------------------------------------------
 # Admin Correction Logging endpoint
 # ---------------------------------------------------------------------------
+def extract_token(request: Request) -> str | None:
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token:
+        return cookie_token
+    auth = request.headers.get("authorization") or request.headers.get("Authorization")
+    if auth and auth.lower().startswith("bearer "):
+        return auth.split(" ", 1)[1].strip() or None
+    return None
+
+async def get_current_user(request: Request) -> dict:
+    token = extract_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database connection offline")
+    try:
+        result = supabase.auth.get_user(token)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid session: {exc}",
+        ) from exc
+    user = getattr(result, "user", None) or (result.get("user") if isinstance(result, dict) else None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    if hasattr(user, "model_dump"):
+        return user.model_dump()
+    if hasattr(user, "dict"):
+        return user.dict()
+    return dict(user)
+
 CORRECTIONS_LOG_PATH = Path(__file__).parent / "data" / "corrections_log.json"
 _corrections_lock = asyncio.Lock()
 
@@ -1323,6 +1370,7 @@ async def log_correction(raw_request: Request, user: dict = Depends(get_current_
 
     entry = {
         "ticket_id": ticket_id,
+        "user_id": user.get("id"),
         "original_text": original_text,
         "ocr_text": ocr_text,
         "original_prediction": original_prediction,
@@ -1333,6 +1381,10 @@ async def log_correction(raw_request: Request, user: dict = Depends(get_current_
         "company_id": profile.get("company_id"),
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
+
+    # Use file lock to prevent race conditions during read-modify-write
+    lock_path = str(CORRECTIONS_LOG_PATH) + ".lock"
+    lock = FileLock(lock_path, timeout=10)
 
     try:
         async with _corrections_lock:
@@ -2056,6 +2108,118 @@ async def bulk_delete_tickets(
 
 
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Ticket Rating / CSAT Endpoints
+# ---------------------------------------------------------------------------
+@app.post("/tickets/rate")
+async def rate_ticket(request_body: RatingRequest, user: dict = Depends(get_current_user)):
+    """Submit a 1-5 star satisfaction rating for a resolved ticket."""
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    auth_user_id = user.get("id")
+    user_metadata = user.get("user_metadata", {})
+    user_company_id = user_metadata.get("company_id")
+    if not user_company_id:
+        raise HTTPException(status_code=403, detail="Access denied: caller has no company_id")
+
+    if request_body.rating < 1 or request_body.rating > 5:
+        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+
+    # Verify ticket exists and belongs to this company
+    try:
+        ticket_res = supabase.table("tickets").select("ticket_id, company_id, assigned_to").eq("ticket_id", request_body.ticket_id).eq("company_id", user_company_id).single().execute()
+        ticket = ticket_res.data
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Upsert rating (one rating per user per ticket)
+    rating_data = {
+        "ticket_id": request_body.ticket_id,
+        "user_id": auth_user_id,
+        "company_id": user_company_id,
+        "rating": request_body.rating,
+        "feedback": request_body.feedback,
+        "agent_id": ticket.get("assigned_to"),
+    }
+    try:
+        supabase.table("ticket_ratings").upsert(rating_data, on_conflict="ticket_id,user_id").execute()
+        return {"status": "rated", "rating": request_body.rating}
+    except Exception as e:
+        logger.error(f"[RATING ERROR] Could not save rating: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save rating")
+
+
+@app.get("/tickets/{ticket_id}/rating")
+async def get_ticket_rating(ticket_id: str, user: dict = Depends(get_current_user)):
+    """Get the rating for a specific ticket."""
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    user_metadata = user.get("user_metadata", {})
+    user_company_id = user_metadata.get("company_id")
+    if not user_company_id:
+        raise HTTPException(status_code=403, detail="Access denied: caller has no company_id")
+
+    try:
+        res = supabase.table("ticket_ratings").select("*").eq("ticket_id", ticket_id).eq("company_id", user_company_id).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        logger.error(f"[RATING ERROR] Could not fetch rating: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch rating")
+
+
+@app.get("/admin/csat")
+async def get_csat_scores(user: dict = Depends(get_current_user)):
+    """Get CSAT scores per agent for the admin dashboard."""
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    user_metadata = user.get("user_metadata", {})
+    user_company_id = user_metadata.get("company_id")
+    user_role = user.get("role", "")
+    if user_role not in ("admin", "company_admin"):
+        raise HTTPException(status_code=403, detail="Access denied: admin role required")
+    if not user_company_id:
+        raise HTTPException(status_code=403, detail="Access denied: caller has no company_id")
+
+    try:
+        # Read from tickets table (csat_rating is stored there by CSATModal)
+        res = supabase.table("tickets").select("csat_rating, csat_comment, assigned_to, company_id").eq("company_id", user_company_id).not_.is_("csat_rating", "null").execute()
+        rated_tickets = res.data or []
+
+        # Aggregate by agent
+        agent_stats = {}
+        for t in rated_tickets:
+            agent_id = t.get("assigned_to") or "unassigned"
+            rating = t["csat_rating"]
+            if agent_id not in agent_stats:
+                agent_stats[agent_id] = {"ratings": [], "distribution": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}}
+            agent_stats[agent_id]["ratings"].append(rating)
+            if 1 <= rating <= 5:
+                agent_stats[agent_id]["distribution"][rating] += 1
+
+        result = []
+        for agent_id, stats in agent_stats.items():
+            avg = sum(stats["ratings"]) / len(stats["ratings"]) if stats["ratings"] else 0
+            result.append({
+                "agent_id": agent_id,
+                "avg_rating": round(avg, 2),
+                "total_ratings": len(stats["ratings"]),
+                "ratings_distribution": stats["distribution"],
+            })
+
+        # Sort by avg_rating descending
+        result.sort(key=lambda x: x["avg_rating"], reverse=True)
+        return {"agents": result, "total_ratings": len(rated_tickets)}
+    except Exception as e:
+        logger.error(f"[CSAT ERROR] Could not fetch CSAT scores: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch CSAT scores")
 # Main AI Analyzer endpoint
 # ---------------------------------------------------------------------------
 @app.post("/ai/analyze_ticket", response_model=TicketResponse, tags=["AI Analysis"], summary="Full AI ticket analysis (rate-limited)")
