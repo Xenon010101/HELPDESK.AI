@@ -27,7 +27,8 @@ import SLABadge from "../components/SLABadge";
 import { formatTimelineDate } from "../../utils/dateUtils";
 
 const AdminTicketsSkeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse" role="status" aria-live="polite" aria-atomic="true">
+        <span className="sr-only">Loading tickets...</span>
         {[...Array(6)].map((_, rowIndex) => (
             <div key={rowIndex} className="grid grid-cols-[90px_180px_260px_120px_140px_120px_120px_100px_80px] gap-4 px-6 py-5 border-b border-slate-50 items-center">
                 <div className="h-4 bg-emerald-100 rounded-full" />
@@ -296,7 +297,7 @@ const AdminTickets = () => {
             </div>
 
             {/* 3. High-Density Data Terminal */}
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]">
+            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]" aria-busy={loading}>
                 {loading && (
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 overflow-hidden">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/80">

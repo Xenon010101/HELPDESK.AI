@@ -18,7 +18,15 @@ import { formatFullTimestamp } from "../../utils/dateUtils";
 import TicketTimeline from "../../user/components/TicketTimeline";
 
 const AdminTicketDetailSkeleton = () => (
-    <div style={{ background: '#f8faf9', minHeight: '100vh', paddingBottom: '80px' }} className="-m-6 p-6 md:-m-10 md:p-10 space-y-6 animate-pulse">
+    <div
+        style={{ background: '#f8faf9', minHeight: '100vh', paddingBottom: '80px' }}
+        className="-m-6 p-6 md:-m-10 md:p-10 space-y-6 animate-pulse"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-atomic="true"
+    >
+        <span className="sr-only">Loading ticket details...</span>
         <div className="bg-white border-b border-emerald-50 shadow-sm p-5 -m-6 mb-6 rounded-b-2xl flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-slate-100 rounded-xl" />
