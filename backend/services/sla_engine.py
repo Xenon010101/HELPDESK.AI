@@ -403,7 +403,7 @@ class SLAEngine:
                 "@type": "MessageCard",
                 "@context": "https://schema.org/extensions",
                 "summary": base["title"],
-                "themeColor": color if result["sla_status"] == "breached" else "f59e0b",
+                "themeColor": "#ef4444" if result["sla_status"] == "breached" else "#f59e0b",
                 "sections": [{
                     "activityTitle": base["title"],
                     "activitySubtitle": subject,
@@ -414,7 +414,7 @@ class SLAEngine:
         elif channel_type == ChannelType.EMAIL:
             return {
                 "type": "SLA_ALERT",
-                "to": channel.get("to", "support@helpdeskai.com"),
+                "to": ticket.get("reporter_email", "support@helpdeskai.com"),
                 "subject": base["title"],
                 "template_data": {
                     "title": f"SLA {result['sla_status'].upper()}: Ticket #{ticket_id}",
