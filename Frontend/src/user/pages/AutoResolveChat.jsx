@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import useTicketStore from '../../store/ticketStore';
 import { Card, CardContent } from '../../components/ui/card';
 import { askAI } from '../../services/aiAssistant';
