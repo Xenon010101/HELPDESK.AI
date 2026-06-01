@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Clock, ExternalLink } from 'lucide-react';
 import { formatTimelineDate } from '../../utils/dateUtils';
+import { safeDisplayText } from '../../utils/sanitizeText';
 
 const categoryDotColors = {
     'Hardware': '#f97316',
@@ -78,7 +79,7 @@ const TicketTable = ({ tickets = [], isLoading = false, limit = null }) => {
                         const sourceLanguageName = translationMeta?.source_language_name || translationMeta?.source_language || 'Unknown';
 
                         // Truncated subject
-                        const subject = ticket.subject || ticket.summary || 'Untitled ticket';
+                        const subject = safeDisplayText(ticket.subject || ticket.summary || ticket.description, 'Untitled ticket');
                         const truncSubject = subject.length > 28 ? subject.slice(0, 28) + '...' : subject;
 
                         // Ticket ID truncated
@@ -131,6 +132,11 @@ const TicketTable = ({ tickets = [], isLoading = false, limit = null }) => {
                                         <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '220px' }}>
                                             <span style={{ fontSize: '13px', fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {truncSubject}
+                                                {ticket.source === 'voice' && (
+                                                    <span title="Voice Submitted" style={{ marginLeft: '6px', fontSize: '14px' }}>
+                                                        🎙️
+                                                    </span>
+                                                )}
                                             </span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ fontSize: '11px', color: '#6b7280' }}>

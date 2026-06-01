@@ -8,8 +8,9 @@ import useTicketStore from "../../store/ticketStore";
 import useAuthStore from "../../store/authStore";
 import { Card, CardContent } from "../../components/ui/card";
 import TicketTimeline from "../components/TicketTimeline";
-import axios from 'axios';
+import apiClient from '../../services/apiClient';
 import { API_CONFIG } from '../../config';
+import { supabase } from '../../lib/supabaseClient';
 
 const TicketTracking = () => {
     const navigate = useNavigate();
@@ -48,7 +49,8 @@ const TicketTracking = () => {
                     user_id: user?.id,
                     subject: aiTicket.summary,
                     description: aiTicket.originalIssue || aiTicket.summary,
-                    original_language: aiTicket.originalLanguage || 'en',
+                    detected_language: aiTicket.source_language || 'en',
+                    original_body: aiTicket.original_text || null,
                     category: aiTicket.category,
                     subcategory: aiTicket.subcategory,
                     priority: aiTicket.priority,
@@ -63,6 +65,7 @@ const TicketTracking = () => {
                     company: profile?.company || null,
                     company_id: profile?.company_id || null,
                     sla_breach_at: aiTicket.sla_breach_at || getSlaBreachAt(aiTicket.priority),
+                    source: aiTicket.source || 'text',
                     metadata: {
                         confidence: aiTicket.confidence,
                         entities: aiTicket.entities,
@@ -77,7 +80,12 @@ const TicketTracking = () => {
                     routing_confidence: aiTicket.confidence
                 };
 
-                const res = await axios.post(`${API_CONFIG.BACKEND_URL}/tickets/save`, savePayload);
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+
+                const res = await axios.post(`${API_CONFIG.BACKEND_URL}/tickets/save`, savePayload, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
 
                 if (res.data?.ticket_id) {
                     const newTicket = { ...aiTicket, id: res.data.ticket_id, ticket_id: res.data.ticket_id, status };

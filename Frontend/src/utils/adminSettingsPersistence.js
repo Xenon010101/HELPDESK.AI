@@ -5,6 +5,10 @@ export const DEFAULT_ADMIN_SETTINGS = {
     autoCloseDays: 7,
     emailNotifications: false,
     adminAlerts: false,
+    digestEnabled: false,
+    digestAdminEmail: "",
+    enableEncryption: false,
+    enablePiiRedaction: false,
 };
 
 export const resolveCompanyId = (profile, user) => {
@@ -27,6 +31,10 @@ export const settingsFromSystemSettingsRow = (row, fallback = DEFAULT_ADMIN_SETT
         autoCloseDays: row.auto_close_days ?? fallback.autoCloseDays,
         emailNotifications: row.email_notifications ?? fallback.emailNotifications,
         adminAlerts: row.admin_alerts ?? fallback.adminAlerts,
+        digestEnabled: row.digest_enabled ?? fallback.digestEnabled,
+        digestAdminEmail: row.digest_admin_email ?? fallback.digestAdminEmail,
+        enableEncryption: row.enable_encryption ?? fallback.enableEncryption,
+        enablePiiRedaction: row.enable_pii_redaction ?? fallback.enablePiiRedaction,
     };
 };
 
@@ -38,4 +46,8 @@ export const settingsToSystemSettingsRow = (settings, companyId) => ({
     auto_close_days: Number(settings.autoCloseDays),
     email_notifications: Boolean(settings.emailNotifications),
     admin_alerts: Boolean(settings.adminAlerts),
+    digest_enabled: Boolean(settings.digestEnabled),
+    digest_admin_email: settings.digestAdminEmail || null,
+    enable_encryption: Boolean(settings.enableEncryption),
+    enable_pii_redaction: Boolean(settings.enablePiiRedaction),
 });

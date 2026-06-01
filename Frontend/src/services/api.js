@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 import { MOCK_TICKETS } from './mockData';
 import { API_CONFIG } from '../config';
 
@@ -69,7 +69,7 @@ export const api = {
       return getStorage('tickets', MOCK_TICKETS);
     }
     try {
-      const response = await axios.get(`${API_BASE_URL}/tickets`);
+      const response = await apiClient.get(`/tickets`);
       const data = response?.data;
 
       // Normalize to the mock shape: an array of tickets
@@ -91,7 +91,7 @@ export const api = {
       return createTicketMock(ticketData);
     }
     try {
-      const response = await axios.post(`${API_BASE_URL}/tickets/save`, ticketData);
+      const response = await apiClient.post(`/tickets/save`, ticketData);
       const created = response?.data;
 
       // Normalize to mock shape: { data: <createdTicket> }
@@ -108,7 +108,7 @@ export const api = {
     try {
       const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
       // ALWAYS call the real backend for prediction if possible
-      const response = await axios.post(`${API_BASE_URL}/ai/analyze_ticket`, {
+      const response = await apiClient.post('/ai/analyze_ticket', {
         text: issueText,
         image_base64: imageBase64,
         image_text: "",
@@ -137,37 +137,33 @@ export const api = {
           ocr_text: result.ocr_text,
           is_potential_duplicate: result.is_potential_duplicate || false,
           parent_ticket_id: result.parent_ticket_id || result.duplicate_ticket?.duplicate_ticket_id || null,
-          sla_breach_at: result.sla_breach_at || getSlaBreachAt(result.priority)
+          sla_breach_at: result.sla_breach_at || getSlaBreachAt(result.priority),
+          source_language: result.source_language,
+          source_language_name: result.source_language_name,
+          was_translated: result.was_translated,
+          original_text: result.original_text
         }
       };
     } catch (error) {
-      console.error("AI Backend Error, falling back to mock:", error);
-      // Fallback to mock logic if backend fails
-      await delay(1000);
-      return {
-        data: {
-          ticket_id: "TCKT-MOCK-" + Math.floor(Math.random() * 10000),
-          category: "Hardware",
-          priority: "Medium",
-          assigned_team: "Hardware Support",
-          auto_resolve: false,
-          routing_confidence: 0.5,
-          duplicate_probability: 0.0,
-          summary: issueText.substring(0, 50) + "...",
-          entities: [],
-          is_potential_duplicate: false,
-          parent_ticket_id: null,
-          sla_breach_at: getSlaBreachAt("Medium")
-        }
-      };
+      console.error("AI Backend Error:", error);
+      throw error;
+    }
+  },
+
+  getSlaEstimate: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/sla-estimate`);
+      return response.data;
+    } catch (error) {
+      console.error(`[SLA Estimate Error] Failed to fetch for ${ticketId}:`, error);
+      return null;
     }
   },
 
   logCorrection: async (correctionPayload) => {
     try {
-      await axios.post(`${API_BASE_URL}/ai/log_correction`, correctionPayload);
+      await apiClient.post(`/ai/log_correction`, correctionPayload);
     } catch (error) {
-      // Non-fatal: log but don't break the UI flow
       console.warn("[Correction Log] Failed to save correction:", error);
     }
   }

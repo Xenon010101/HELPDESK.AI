@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import TeamSection from '../components/landing/TeamSection';
+import ThemeToggle from '../components/shared/ThemeToggle';
 
 const CTA_TRANSITION = 'transition-all duration-200 ease-out transform-gpu will-change-transform';
 const CTA_SCALE = 'hover:scale-105 active:scale-[0.98]';
@@ -53,8 +54,8 @@ function AnimatedStat({ target, suffix = '', prefix = '', label, isWord = false 
     }, [triggered, target, isWord]);
 
     return (
-        <div ref={ref} className="p-4">
-            <div className="text-4xl font-extrabold mb-1 text-white tabular-nums">
+        <div ref={ref} className="p-3 sm:p-4">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-1 text-white tabular-nums">
                 {prefix}{display}{suffix}
             </div>
             <div className="text-sm text-white font-medium tracking-wide opacity-75">{label}</div>
@@ -283,97 +284,224 @@ export default function LandingPage() {
             {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
 
             {/* ==================== NAV ==================== */}
-            <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        {/* Logo */}
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                            <img src="/favicon.png" alt="H" className="w-8 h-8 object-contain" />
-                            <span className="font-black text-2xl tracking-tighter text-emerald-900 italic uppercase">HelpDesk.ai</span>
-                        </div>
+<nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center justify-between h-20">
 
-                        {/* Dark Mode Toggle */}
-                        <button
-                            onClick={() => {
-                                const isDark = document.documentElement.classList.toggle('dark');
-                                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                            }}
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                            aria-label="Toggle dark mode"
-                        >
-                            <Moon className="w-5 h-5 text-gray-600 dark:hidden" />
-                            <Sun className="w-5 h-5 text-yellow-400 hidden dark:block" />
-                        </button>
+      {/* Logo */}
+      <div
+        className="flex items-center gap-3 cursor-pointer"
+        onClick={() => navigate('/')}
+      >
+        <img src="/favicon.png" alt="logo" className="w-10 h-10" />
+        <span className="font-black italic text-emerald-900 text-2xl">
+          HELPDESK.AI
+        </span>
+      </div>
 
-                        {/* Desktop Links */}
-                        <div className="hidden md:flex items-center gap-8">
-                            <a href="#features" className="text-sm font-semibold text-gray-600 hover:text-emerald-800 transition-colors">Features</a>
-                            <a href="#how-it-works" className="text-sm font-semibold text-gray-600 hover:text-emerald-800 transition-colors">How It Works</a>
-                            <a href="#pricing" className="text-sm font-semibold text-gray-600 hover:text-emerald-800 transition-colors">Pricing</a>
-                        </div>
+      {/* Desktop Nav */}
+      <div className="hidden lg:flex items-center gap-10">
 
-                        {/* CTA Buttons */}
-                        <div className="hidden md:flex items-center gap-3">
-                            <button
-                                onClick={() => navigate('/login')}
-                                className="text-sm font-semibold text-gray-700 hover:text-emerald-800 transition-colors px-4 py-2 rounded-lg hover:bg-gray-50"
-                            >
-                                Sign In
-                            </button>
-                            <button
-                                onClick={() => setShowDemo(true)}
-                                className={`group text-sm font-semibold text-emerald-800 border border-emerald-200 px-4 py-2 rounded-lg hover:bg-emerald-50 ${CTA_TRANSITION} ${CTA_SCALE} flex items-center gap-1.5`}
-                            >
-                                <Play className={`w-3.5 h-3.5 fill-emerald-700 ${CTA_PLAY_SHIFT}`} /> Watch Demo
-                            </button>
-                            <button
-                                onClick={() => navigate('/admin-signup')}
-                                className={`group bg-emerald-900 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold ${CTA_TRANSITION} ${CTA_SCALE} ${CTA_PRIMARY_GLOW}`}
-                            >
-                                Get Started Free
-                            </button>
-                        </div>
+        <button
+          className="p-2 rounded-lg hover:bg-gray-100 transition"
+        >
+          <Moon className="w-6 h-6 text-gray-600" />
+        </button>
 
-                        {/* Mobile Menu Button */}
-                        <div className="md:hidden">
-                            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 hover:text-emerald-800 p-2">
-                                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <a
+          href="#features"
+          className="font-semibold text-gray-600 hover:text-emerald-700 transition"
+        >
+          Features
+        </a>
 
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <div className="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-xl z-50">
-                        <div className="px-5 pt-3 pb-6 space-y-4">
-                            <a href="#features" onClick={() => setIsMenuOpen(false)} className="block text-base font-semibold text-gray-700 hover:text-emerald-800 py-2">Features</a>
-                            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="block text-base font-semibold text-gray-700 hover:text-emerald-800 py-2">How It Works</a>
-                            <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="block text-base font-semibold text-gray-700 hover:text-emerald-800 py-2">Pricing</a>
-                            <div className="pt-4 flex flex-col gap-3 border-t border-gray-100">
-                                <button onClick={() => { setIsMenuOpen(false); setShowDemo(true); }} className={`group w-full text-center py-2.5 text-emerald-800 font-semibold border border-emerald-200 rounded-lg flex items-center justify-center gap-2 ${CTA_TRANSITION} ${CTA_SCALE}`}>
-                                    <Play className={`w-4 h-4 fill-emerald-700 ${CTA_PLAY_SHIFT}`} /> Watch Demo
-                                </button>
-                                <button onClick={() => navigate('/login')} className="w-full text-center py-2.5 text-gray-700 font-semibold border border-gray-100 rounded-lg">
-                                    Sign In
-                                </button>
-                                <button onClick={() => navigate('/admin-signup')} className={`group w-full bg-emerald-900 text-white py-3 rounded-lg font-semibold ${CTA_TRANSITION} ${CTA_SCALE} ${CTA_PRIMARY_GLOW}`}>
-                                    Get Started Free
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </nav>
+        <a
+          href="#how-it-works"
+          className="font-semibold text-gray-600 hover:text-emerald-700 transition"
+        >
+          How It Works
+        </a>
+
+        <a
+          href="#pricing"
+          className="font-semibold text-gray-600 hover:text-emerald-700 transition"
+        >
+          Pricing
+        </a>
+      </div>
+
+      {/* Desktop Actions */}
+      <div className="hidden lg:flex items-center gap-4">
+
+        <button
+          onClick={() => navigate('/login')}
+          className="font-semibold text-gray-700 hover:text-emerald-700"
+        >
+          Sign In
+        </button>
+
+        <button
+          onClick={() => setShowDemo(true)}
+          className="flex items-center gap-2 px-6 py-3 border border-emerald-200 rounded-xl text-emerald-700 font-semibold hover:bg-emerald-50 transition"
+        >
+          <Play size={16} fill="currentColor" />
+          Watch Demo
+        </button>
+
+        <button
+          onClick={() => navigate('/admin-signup')}
+          className="px-6 py-3 bg-emerald-900 hover:bg-emerald-800 text-white rounded-xl font-bold shadow-lg"
+        >
+          Get Started Free
+        </button>
+
+      </div>
+
+      {/* Mobile Buttons */}
+      <div className="flex lg:hidden items-center gap-2">
+
+        <button className="p-2">
+          <Moon className="w-5 h-5 text-gray-600" />
+        </button>
+
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="p-2 border border-gray-200 rounded-lg"
+        >
+          {isMenuOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  {/* Mobile Menu */}
+  {isMenuOpen && (
+    <div className="lg:hidden absolute top-full left-0 w-full border-t border-gray-100 bg-white shadow-xl dark:bg-gray-900 dark:border-gray-800">
+      <div className="flex flex-col px-4 py-5 gap-4">
+
+        <a
+          href="#features"
+          onClick={() => setIsMenuOpen(false)}
+          className="font-medium text-gray-700"
+        >
+          Features
+        </a>
+
+        <a
+          href="#how-it-works"
+          onClick={() => setIsMenuOpen(false)}
+          className="font-medium text-gray-700"
+        >
+          How It Works
+        </a>
+
+        <a
+          href="#pricing"
+          onClick={() => setIsMenuOpen(false)}
+          className="font-medium text-gray-700"
+        >
+          Pricing
+        </a>
+
+        <hr />
+
+        <button
+          onClick={() => navigate('/login')}
+          className="text-left font-medium"
+        >
+          Sign In
+        </button>
+
+        <button
+          onClick={() => setShowDemo(true)}
+          className="flex items-center gap-2 font-medium"
+        >
+          <Play size={16} />
+          Watch Demo
+        </button>
+
+        <button
+          onClick={() => navigate('/admin-signup')}
+          className="bg-emerald-900 text-white py-3 rounded-xl font-semibold"
+        >
+          Get Started Free
+        </button>
+
+      </div>
+    </div>
+  )}
+</nav>
 
             {/* ==================== HERO ==================== */}
-            <section className="relative pt-12 md:pt-20 pb-20 md:pb-32 overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] md:h-[600px] bg-gradient-to-b from-green-50/80 to-transparent pointer-events-none -z-10" />
+            {/* ==================== HERO ==================== */}
+<section className="relative overflow-hidden min-h-[calc(100vh-64px)] flex items-center">
+    
+    {/* Background */}
+    <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-white to-white" />
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-8">
-                        <Activity className="w-3 h-3" />
-                        <span>AI-Powered Helpdesk Automation · Made in India 🇮🇳</span>
+    <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-emerald-100/40 blur-[140px] rounded-full pointer-events-none" />
+
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+
+        <div className="grid lg:grid-cols-2 gap-20 items-center">
+
+            {/* LEFT SIDE */}
+            <div>
+
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-600 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-8">
+                    <Activity className="w-3 h-3" />
+                    <span>AI-Powered Helpdesk Automation · Made in India 🇮🇳</span>
+                </div>
+
+                <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 leading-[1.05] tracking-tight mb-6">
+                    Your IT Helpdesk,
+                    <br />
+                    <span className="text-emerald-700">
+                        Fully Automated.
+                    </span>
+                </h1>
+
+                <p className="text-lg md:text-xl text-gray-500 max-w-xl leading-relaxed mb-10">
+                    Turn messy user complaints into structured,
+                    categorized, and prioritized support tickets —
+                    instantly. No manual triage.
+                    No missed urgencies.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 mb-12">
+
+                    <button
+                        onClick={() => navigate('/admin-signup')}
+                        className="px-8 py-4 bg-emerald-900 text-white rounded-xl font-bold shadow-xl shadow-emerald-900/20 hover:bg-emerald-800 transition-all flex items-center justify-center gap-2"
+                    >
+                        Get Started Free
+                        <ArrowRight className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={() => setShowDemo(true)}
+                        className="px-8 py-4 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-emerald-500 hover:text-emerald-700 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Play className="w-4 h-4 fill-current" />
+                        Watch Demo
+                    </button>
+
+                </div>
+
+                {/* Trust Stats */}
+                <div className="grid grid-cols-3 gap-8 pt-4 mt-5 border-t border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <BrainCircuit className="w-8 h-8 text-emerald-600" />
+                        <div>
+                            <div className="text-2xl font-bold text-gray-900">99%</div>
+                            <div className="text-sm text-gray-500">Classification Accuracy</div>
+                        </div>
                     </div>
 
                     <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight mb-6 leading-[1.1]">
@@ -513,12 +641,87 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </div>
-            </section>
+
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="relative h-[500px] flex items-center justify-center">
+                {/* Glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-100 via-teal-50 to-emerald-50 blur-3xl rounded-full opacity-70 -z-10" />
+
+                {/* Incoming Email Card */}
+                <motion.div 
+                    className="absolute top-0 left-0 w-[340px] bg-white/80 backdrop-blur-md rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.07)] border border-white overflow-hidden z-10"
+                    initial={{ opacity: 0, x: 50, rotate: 5 }}
+                    animate={{ opacity: 1, x: 0, rotate: -3 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <div className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <Mail className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm text-gray-800">Jane Doe</p>
+                                <p className="text-xs text-gray-500">jane.doe@example.com</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-700 italic">"Hey support, the wifi in downstream lab 3 is acting up again. Can't connect. Need fixed ASAP!"</p>
+                    </div>
+                </motion.div>
+
+                {/* Center AI Badge & Arrow */}
+                <motion.div 
+                    className="absolute z-20 flex flex-col items-center gap-2"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.6 }}
+                >
+                    <div className="w-1 h-12 bg-gradient-to-b from-transparent via-emerald-300 to-transparent" />
+                    <div className="bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl shadow-emerald-500/30 flex items-center gap-2">
+                        <Bot className="w-5 h-5" />
+                        <span className="font-bold">AI Processing</span>
+                    </div>
+                    <div className="w-1 h-12 bg-gradient-to-b from-transparent via-emerald-300 to-transparent" />
+                </motion.div>
+
+                {/* Processed Ticket */}
+                <motion.div 
+                    className="absolute bottom-0 right-0 w-[420px] bg-white rounded-3xl shadow-[0_30px_90px_rgba(16,185,129,0.15)] border border-gray-100 overflow-hidden z-10"
+                    initial={{ opacity: 0, x: -50, rotate: -5 }}
+                    animate={{ opacity: 1, x: 0, rotate: 3 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                    <div className="bg-emerald-500 px-4 py-2 flex justify-between items-center">
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Ticket #4029</span>
+                        <span className="text-[10px] font-bold text-white/80">RESOLVED</span>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-800 italic">HelpDesk AI Assistant</span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-snug mb-4">"Remotely reset the Lab 3 router. Connectivity restored. Total downtime: 143ms."</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg text-[10px] text-emerald-700 font-bold uppercase tracking-widest text-center">Category: Network</div>
+                            <div className="bg-red-500/10 border border-red-500/20 p-2 rounded-lg text-[10px] text-red-700 font-bold uppercase tracking-widest text-center">Priority: High</div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 
             {/* ==================== STATS BAR ==================== */}
-            <section className="bg-emerald-900 py-12 text-white">
+            <section className="bg-emerald-900 py-8 sm:py-12 text-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center divide-y-2 sm:divide-y-0 sm:divide-x divide-white/10">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 text-center divide-y-2 sm:divide-y-0 sm:divide-x divide-white/10">
                         <AnimatedStat prefix="+" target="80" suffix="%" label="Faster Ticket Triage" />
                         <AnimatedStat target="99" suffix="%" label="Classification Accuracy" />
                         <AnimatedStat target="Zero" label="Manual Routing Needed" isWord={true} />
@@ -528,18 +731,18 @@ export default function LandingPage() {
             </section>
 
             {/* ==================== FEATURES GRID ==================== */}
-            <section className="py-24 bg-white" id="features">
+            <section className="py-16 sm:py-20 md:py-24 bg-white" id="features">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <span className="text-xs font-bold tracking-widest text-emerald-700 uppercase mb-3 block">Core Intelligence</span>
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">Work Smarter, Not Harder</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">Work Smarter, Not Harder</h2>
                         <p className="text-gray-500 mt-4 text-lg max-w-xl mx-auto">Three AI capabilities that eliminate manual helpdesk work.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                         {/* Card 1: Auto-Categorization */}
                         <div className="group rounded-3xl bg-gray-50 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
-                            <div className="h-52 bg-gradient-to-br from-blue-50 to-gray-50 p-6 flex items-center justify-center relative overflow-hidden">
+                            <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-br from-blue-50 to-gray-50 p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
                                 <div className="relative z-10 flex flex-col gap-3 items-center">
                                     <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-xs font-bold text-gray-400 flex items-center gap-2 transform -translate-x-4 opacity-60">
                                         <div className="w-2 h-2 rounded-full bg-gray-300" /> Ticket #1024
@@ -558,7 +761,7 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-8">
+                            <div className="p-5 sm:p-6 md:p-8">
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">Auto-Categorization</h3>
                                 <p className="text-gray-500 leading-relaxed mb-6">
                                     Instantly detects if an issue is Network, Hardware, Software, or Access-related — no manual tagging.
@@ -574,7 +777,7 @@ export default function LandingPage() {
 
                         {/* Card 2: Priority Detection */}
                         <div className="group rounded-3xl bg-gray-50 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
-                            <div className="h-52 bg-gradient-to-br from-red-50 to-orange-50 p-6 flex items-center justify-center relative overflow-hidden">
+                            <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-br from-red-50 to-orange-50 p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
                                 <div className="relative z-10 w-full max-w-[200px] space-y-2.5">
                                     <div className="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between opacity-50 scale-95">
                                         <div className="flex items-center gap-2">
@@ -599,7 +802,7 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-8">
+                            <div className="p-5 sm:p-6 md:p-8">
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">Priority Detection</h3>
                                 <p className="text-gray-500 leading-relaxed mb-6">
                                     Understands urgency signals in text and automatically flags issues from Low to Critical.
@@ -615,7 +818,7 @@ export default function LandingPage() {
 
                         {/* Card 3: Smart Resolution */}
                         <div className="group rounded-3xl bg-gray-50 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
-                            <div className="h-52 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 flex items-center justify-center relative overflow-hidden">
+                            <div className="h-40 sm:h-44 md:h-52 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
                                 <div className="relative z-10 w-full max-w-[200px] flex flex-col gap-3">
                                     <div className="self-end bg-emerald-600 text-white p-2.5 rounded-2xl rounded-tr-none shadow-sm text-[10px] max-w-[80%]">
                                         Reset password for user@company.com?
@@ -634,7 +837,7 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-8">
+                            <div className="p-5 sm:p-6 md:p-8">
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Resolution</h3>
                                 <p className="text-gray-500 leading-relaxed mb-6">
                                     Checks historical data to auto-fix simple issues, or routes complex ones to the right human team.
@@ -652,7 +855,7 @@ export default function LandingPage() {
             </section>
 
             {/* ==================== HOW IT WORKS ==================== */}
-            <section className="bg-emerald-950 py-16 md:py-32 text-white relative overflow-hidden" id="how-it-works">
+            <section className="bg-emerald-950 py-14 sm:py-20 md:py-32 text-white relative overflow-hidden" id="how-it-works">
                 {/* Background Decorations */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
@@ -702,8 +905,8 @@ export default function LandingPage() {
                         </div>
 
                         {/* Right: Visual Display */}
-                        <div className="w-full md:w-1/2 h-[350px] md:h-[500px] relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-[32px] md:rounded-[40px] border border-white/5 backdrop-blur-3xl overflow-hidden p-6 md:p-12 flex items-center justify-center">
+                        <div className="w-full md:w-1/2 h-[300px] sm:h-[350px] md:h-[500px] relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-2xl sm:rounded-[32px] md:rounded-[40px] border border-white/5 backdrop-blur-3xl overflow-hidden p-4 sm:p-6 md:p-12 flex items-center justify-center">
                                 <AnimatePresence mode="sync">
                                     <motion.div
                                         key={activeStep}
@@ -733,10 +936,10 @@ export default function LandingPage() {
             </section>
 
             {/* ==================== PRICING ==================== */}
-            <section className="py-24 bg-gray-50" id="pricing">
+            <section className="py-16 sm:py-20 md:py-24 bg-gray-50" id="pricing">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
                         <p className="text-gray-500 mb-8">All plans in Indian Rupees (₹) · GST applicable</p>
 
                         {/* Billing Toggle */}
@@ -756,11 +959,11 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
                         {pricingPlans.map(({ name, price, priceLabel, period, desc, cta, ctaStyle, features, popular }) => (
                             <div
                                 key={name}
-                                className={`p-8 rounded-2xl bg-white transition-all relative ${popular ? 'border-2 border-emerald-900 shadow-2xl shadow-emerald-900/10 scale-[1.02]' : 'border border-gray-200 hover:border-gray-300'}`}
+                                className={`p-5 sm:p-6 md:p-8 rounded-2xl bg-white transition-all relative ${popular ? 'border-2 border-emerald-900 shadow-2xl shadow-emerald-900/10 md:scale-[1.02]' : 'border border-gray-200 hover:border-gray-300'}`}
                             >
                                 {popular && (
                                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-900 text-white px-4 py-1.5 rounded-full text-xs font-bold tracking-wide whitespace-nowrap shadow-lg">
@@ -769,7 +972,7 @@ export default function LandingPage() {
                                 )}
                                 <h3 className="text-lg font-bold text-gray-900 mb-2">{name}</h3>
                                 <div className="text-4xl font-extrabold text-gray-900 mb-2">
-                                    {priceLabel ? priceLabel : <>₹{price.toLocaleString('en-IN')}<span className="text-base font-normal text-gray-500">{period}</span></>}
+                                    {priceLabel ? priceLabel : <><span className="text-3xl sm:text-4xl">₹{price.toLocaleString('en-IN')}</span><span className="text-base font-normal text-gray-500">{period}</span></>}
                                 </div>
                                 <p className="text-sm text-gray-500 mb-6">{desc}</p>
                                 <button
@@ -803,16 +1006,18 @@ export default function LandingPage() {
             </section>
 
             {/* ==================== TEAM SECTION ==================== */}
-            <TeamSection />
+            <div className="px-4 sm:px-6 lg:px-8">
+                <TeamSection />
+            </div>
 
             {/* ==================== FOOTER ==================== */}
             <footer className="bg-emerald-950 text-white">
                 {/* CTA Block */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 text-center border-b border-white/10">
-                    <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-6 max-w-3xl mx-auto leading-tight">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 md:pt-24 pb-12 md:pb-16 text-center border-b border-white/10">
+                    <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-6 max-w-3xl mx-auto leading-tight">
                         The Smartest IT Helpdesk for Indian Businesses
                     </h2>
-                    <p className="text-white/70 text-lg mb-10 max-w-xl mx-auto">
+                    <p className="text-white/70 text-base sm:text-lg mb-6 sm:mb-10 max-w-xl mx-auto">
                         Start automating ticket triage today. No credit card required.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -840,8 +1045,8 @@ export default function LandingPage() {
                 </div>
 
                 {/* Footer Links */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 md:py-16">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10">
                         {/* Brand Column */}
                         <div className="col-span-2 md:col-span-1">
                             <div className="flex items-center gap-2 mb-4">
@@ -887,7 +1092,7 @@ export default function LandingPage() {
                             {
                                 heading: 'Company',
                                 links: [
-                                    { label: 'About Us', href: '#' },
+                                    { label: 'About Us', href: '/about-us' },
                                     { label: 'Careers', href: '#' },
                                     { label: 'Privacy Policy', href: '/privacy' },
                                     { label: 'Terms of Service', href: '/terms' },
@@ -899,7 +1104,7 @@ export default function LandingPage() {
                                     { label: 'Security Overview', href: '/security' },
                                     { label: 'Privacy Policy', href: '/privacy' },
                                     { label: 'Terms of Service', href: '/terms' },
-                                    { label: 'Cookie Policy', href: '#' },
+                                    { label: 'Cookie Policy', href: '/cookie-policy' },
                                 ]
                             },
                         ].map(({ heading, links }) => (
@@ -927,10 +1132,10 @@ export default function LandingPage() {
 
                     {/* Bottom bar */}
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-16 pt-8 border-t border-white/10">
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-white/40 text-center md:text-left">
                             © 2026 HelpDesk.ai. All rights reserved. · Registered in India
                         </p>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                             <button onClick={() => navigate('/terms')} className="text-xs text-white/40 hover:text-white transition-colors">Terms</button>
                             <button onClick={() => navigate('/privacy')} className="text-xs text-white/40 hover:text-white transition-colors">Privacy</button>
                             <button onClick={() => navigate('/security')} className="text-xs text-white/40 hover:text-white transition-colors">Security</button>

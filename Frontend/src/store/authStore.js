@@ -1,5 +1,13 @@
+const validatePassword = (password) => {
+  if (!password || password.length < 8) return 'Password must be at least 8 characters.';
+  if (!/[A-Z]/.test(password)) return 'Password must contain one uppercase letter.';
+  if (!/[a-z]/.test(password)) return 'Password must contain one lowercase letter.';
+  if (!/[0-9]/.test(password)) return 'Password must contain one number.';
+  return null;
+};
+
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createPersistedStore } from './persistenceMiddleware';
 import { supabase } from '../lib/supabaseClient';
 import { API_CONFIG } from '../config';
 import useTicketStore from './ticketStore';
@@ -7,12 +15,16 @@ import useTicketStore from './ticketStore';
 const BACKEND_URL = API_CONFIG.BACKEND_URL;
 
 const verifyServerCookieSession = async () => {
-    try {
+   try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
         const res = await fetch(`${BACKEND_URL}/auth/me`, {
             method: 'GET',
             credentials: 'include',
             headers: { Accept: 'application/json' },
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
         if (!res.ok) return null;
         const body = await res.json();
         return body?.user || null;
@@ -24,12 +36,16 @@ const verifyServerCookieSession = async () => {
 
 const mirrorBackendAuth = async (path, payload) => {
     try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
         await fetch(`${BACKEND_URL}${path}`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
     } catch (e) {
         console.warn(`Backend auth ${path} failed:`, e?.message || e);
     }
@@ -51,7 +67,7 @@ const getProfileCache = (profile) => {
 };
 
 const useAuthStore = create(
-    persist(
+    createPersistedStore('auth',
         (set, get) => ({
             // --- AUTH STATE ---
             user: null,
@@ -187,6 +203,26 @@ const useAuthStore = create(
                 }
             },
 
+            loginWithGoogle: async () => {
+                const { error } =
+                    await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo:
+                                `${window.location.origin}/auth/callback`
+                        }
+                    });
+
+                if (error) {
+                    console.error(
+                        "Google OAuth error:",
+                        error.message
+                    );
+
+                    throw error;
+                }
+            },
+
             signInWithMagicLink: async (email) => {
                 set({ loading: true });
                 console.log("Attempting magic link / OTP login for:", email);
@@ -202,6 +238,27 @@ const useAuthStore = create(
                     return true;
                 } catch (error) {
                     console.error("Magic link operation failed:", error.message);
+                    throw error;
+                } finally {
+                    set({ loading: false });
+                }
+            },
+
+            signInWithGoogle: async () => {
+                set({ loading: true });
+                console.log("Attempting Google OAuth login");
+                try {
+                    const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: `${window.location.origin}/dashboard`
+                        }
+                    });
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error("Google OAuth operation failed:", error.message);
                     throw error;
                 } finally {
                     set({ loading: false });
@@ -243,6 +300,9 @@ const useAuthStore = create(
             signup: async (email, password, fullName, role = 'user', company = '', extraMetadata = {}, emailRedirectTo = undefined) => {
                 set({ loading: true });
                 console.log("Starting signup for:", email);
+
+        const passwordError = validatePassword(password);
+        if (passwordError) throw new Error(passwordError);
 
                 try {
                     await mirrorBackendAuth('/auth/signup', {
@@ -349,18 +409,23 @@ const useAuthStore = create(
 
                 supabase.auth.onAuthStateChange(async (event, session) => {
                     console.log("Auth state change:", event);
-                    if (session?.user) {
-                        set({ user: session.user, loading: true, isCheckingSession: true });
-                        await get().getProfile(session.user);
-                    } else {
+                    try {
+                        if (session?.user) {
+                            set({ user: session.user, loading: true, isCheckingSession: true });
+                            await get().getProfile(session.user);
+                        } else {
+                            set({ user: null, profile: null });
+                        }
+                    } catch (e) {
+                        console.warn("Auth state change error:", e?.message || e);
                         set({ user: null, profile: null });
+                    } finally {
+                        set({ loading: false, isCheckingSession: false });
                     }
-                    set({ loading: false, isCheckingSession: false });
                 });
             }
         }),
         {
-            name: 'auth-storage',
             partialize: (state) => ({
                 // Cache display-only profile fields. Role/status must come from the DB.
                 profile: getProfileCache(state.profile)
@@ -370,3 +435,4 @@ const useAuthStore = create(
 );
 
 export default useAuthStore;
+

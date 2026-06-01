@@ -26,6 +26,7 @@ class FakeTable:
         self.filters = {}
         self.payload = None
         self.limit_count = None
+        self.offset_count = None
         self.is_single = False
         self.order_field = None
         self.order_desc = False
@@ -59,6 +60,10 @@ class FakeTable:
         self.limit_count = value
         return self
 
+    def offset(self, value):
+        self.offset_count = value
+        return self
+
     def single(self):
         self.is_single = True
         return self
@@ -67,13 +72,30 @@ class FakeTable:
         if hasattr(self, "inserted_rows"):
             return FakeResult(self.inserted_rows)
 
+        def _safe_eq(v1, v2):
+            if v1 == v2:
+                return True
+            if v1 is None or v2 is None:
+                return False
+            if isinstance(v1, int) and isinstance(v2, str):
+                try:
+                    return v1 == int(v2)
+                except ValueError:
+                    return False
+            if isinstance(v1, str) and isinstance(v2, int):
+                try:
+                    return int(v1) == v2
+                except ValueError:
+                    return False
+            return False
+
         if self.payload is not None:
             rows = self.db.setdefault(self.name, [])
             updated_rows = []
             for row in rows:
                 match = True
                 for k, v in self.filters.items():
-                    if row.get(k) != v:
+                    if not _safe_eq(row.get(k), v):
                         match = False
                         break
                 if match:
@@ -83,10 +105,13 @@ class FakeTable:
 
         rows = list(self.db.get(self.name, []))
         for key, value in self.filters.items():
-            rows = [row for row in rows if row.get(key) == value]
+            rows = [row for row in rows if _safe_eq(row.get(key), value)]
 
         if self.order_field:
             rows.sort(key=lambda x: x.get(self.order_field, ""), reverse=self.order_desc)
+
+        if self.offset_count is not None:
+            rows = rows[self.offset_count:]
 
         if self.limit_count is not None:
             rows = rows[:self.limit_count]
@@ -273,6 +298,12 @@ def mock_ai_services(request):
         "test_semantic_duplicates.py",
         "test_auth_cookie.py",
         "test_mobile_supabase_env.py",
+        "test_sla_service.py",
+        "test_language_pipeline.py",
+        "test_sla_predictor.py",
+        "test_webhook_service.py",
+        "test_metrics_service.py",
+        "test_audit_service.py",
     }:
         yield
         return

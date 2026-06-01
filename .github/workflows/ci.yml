@@ -83,10 +83,11 @@ jobs:
             pydantic \
             python-multipart \
             slowapi \
-            supabase \
+            supabase==2.22.4 \
             apscheduler \
             python-dotenv \
-            prometheus-client
+            prometheus-client \
+            prometheus-fastapi-instrumentator>=6.1.0
 
       - name: Smoke-test backend import (degraded mode allowed)
         env:
