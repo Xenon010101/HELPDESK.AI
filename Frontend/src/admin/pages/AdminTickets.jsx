@@ -26,6 +26,33 @@ import { formatTicketId } from "../../utils/format";
 import SLABadge from "../components/SLABadge";
 import { formatTimelineDate } from "../../utils/dateUtils";
 
+const AdminTicketsSkeleton = () => (
+    <div className="animate-pulse">
+        {[...Array(6)].map((_, rowIndex) => (
+            <div key={rowIndex} className="grid grid-cols-[90px_180px_260px_120px_140px_120px_120px_100px_80px] gap-4 px-6 py-5 border-b border-slate-50 items-center">
+                <div className="h-4 bg-emerald-100 rounded-full" />
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-slate-100 rounded-lg" />
+                    <div className="space-y-2 flex-1">
+                        <div className="h-3 bg-slate-100 rounded-full" />
+                        <div className="h-2 bg-slate-100 rounded-full w-2/3" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="h-3 bg-slate-100 rounded-full" />
+                    <div className="h-2 bg-slate-100 rounded-full w-1/2" />
+                </div>
+                <div className="h-7 bg-amber-100 rounded-xl" />
+                <div className="h-8 bg-slate-100 rounded-full" />
+                <div className="h-4 bg-emerald-100 rounded-full" />
+                <div className="h-7 bg-slate-100 rounded-xl" />
+                <div className="h-6 bg-slate-100 rounded-full" />
+                <div className="h-9 bg-slate-900/10 rounded-xl" />
+            </div>
+        ))}
+    </div>
+);
+
 const AdminTickets = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -271,8 +298,11 @@ const AdminTickets = () => {
             {/* 3. High-Density Data Terminal */}
             <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]">
                 {loading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
-                        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/80">
+                            <div className="h-3 w-32 bg-slate-200 rounded-full animate-pulse" />
+                        </div>
+                        <AdminTicketsSkeleton />
                     </div>
                 )}
 
