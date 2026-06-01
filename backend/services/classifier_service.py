@@ -2,13 +2,21 @@
 Classifier Service — Loads the trained DistilBert sequence classifier and predicts.
 The model outputs combined "Category | SubCategory" labels.
 Priority and other fields are derived from the category mapping.
+
+Redis integration: prediction results are cached by input text so repeated
+submissions of the same ticket text skip the full model forward-pass.
 """
 
+import logging
 import os
 import json
 import torch
 import torch.nn.functional as F
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+
+from backend.services.cache_service import cache_service
+
+logger = logging.getLogger(__name__)
 
 SAVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "classifier")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,8 +93,17 @@ class ClassifierService:
     def predict(self, text: str) -> dict:
         """
         Predict category, subcategory, priority, auto_resolve, assigned_team, and confidence.
+
+        Results are cached in Redis by input text so repeated identical tickets
+        skip the full transformer forward-pass entirely.
         """
         self.load()
+
+        # Check Redis cache before running inference
+        cached = cache_service.get_classification(text)
+        if cached is not None:
+            logger.debug("[ClassifierService] Cache HIT for text (len=%d)", len(text))
+            return cached
 
         encoding = self.tokenizer(
             text,
@@ -140,7 +157,7 @@ class ClassifierService:
                     confidence = max(confidence, 0.92) 
                     break
 
-        return {
+        result = {
             "category": category,
             "subcategory": subcategory,
             "priority": priority,
@@ -148,3 +165,7 @@ class ClassifierService:
             "assigned_team": assigned_team,
             "confidence": confidence,
         }
+
+        cache_service.set_classification(text, result)
+        logger.debug("[ClassifierService] Cache SET for text (len=%d)", len(text))
+        return result

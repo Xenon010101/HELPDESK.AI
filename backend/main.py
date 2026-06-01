@@ -59,6 +59,7 @@ from backend.services.classifier_v3 import classifier_v3 # V3 Power Model
 from backend.services.ner_service import NERService
 from backend.services.duplicate_service import DuplicateService
 from backend.services.rag_service import RagService
+from backend.services.cache_service import cache_service
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +220,13 @@ except ImportError:
 async def lifespan(app: FastAPI):
     """Load all models at startup."""
     print("[Startup] Loading AI models ...")
+
+    # Connect to Redis cache (non-fatal — graceful degradation on failure)
+    cache_service.connect()
+    print(
+        f"[Startup] Redis Cache: {'Connected' if cache_service.is_available else 'Unavailable (running without cache)'}"
+    )
+
     try:
         classifier_service.load()
     except FileNotFoundError as e:
@@ -257,6 +265,8 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("[Startup-FATAL] Classifier assets not loaded. Set ALLOW_DEGRADED_STARTUP=1 to bypass.")
     yield
     print("[Shutdown] Cleaning up ...")
+    cache_service.close()
+    print("[Shutdown] Redis cache connection closed.")
 
 
 # ---------------------------------------------------------------------------
@@ -380,6 +390,18 @@ async def health_check():
         classifier_loaded=classifier_service._loaded,
         ner_loaded=ner_service._loaded,
     )
+
+
+@app.get("/cache/health")
+async def cache_health():
+    """Report Redis connectivity and configuration."""
+    return {
+        "redis_available": cache_service.is_available,
+        "redis_ping": cache_service.ping(),
+        "redis_url": (
+            os.getenv("REDIS_URL", "redis://localhost:6379/0").split("@")[-1]
+        ),
+    }
 
 
 @app.get("/ready", response_model=ReadinessResponse)
