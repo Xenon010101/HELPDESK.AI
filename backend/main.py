@@ -1209,3 +1209,48 @@ async def auth_logout(response: Response):
 async def auth_me(user: dict = Depends(get_current_user)):
     return {"user": user}
 
+
+# ---------------------------------------------------------------------------
+# WebSocket endpoint with heartbeat + connection pooling (Issue #902)
+# ---------------------------------------------------------------------------
+from fastapi import WebSocket, WebSocketDisconnect
+from backend.services.websocket_manager import manager as ws_manager
+
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str, token: str | None = None, company_id: str | None = None):
+    """
+    WebSocket connection endpoint.
+    Validates token (optional — uses cookie or query param), registers with ConnectionManager.
+    Broadcasts ticket updates via ws_manager.broadcast().
+    """
+    # Attempt token validation if provided
+    if token and supabase:
+        try:
+            result = supabase.auth.get_user(token)
+            if not getattr(result, "user", None):
+                await websocket.close(code=1008, reason="Invalid token")
+                return
+        except Exception:
+            await websocket.close(code=1008, reason="Auth error")
+            return
+
+    accepted = await ws_manager.connect(websocket, client_id, company_id=company_id)
+    if not accepted:
+        return
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                import json as _json
+                msg = _json.loads(data)
+                if msg.get("type") == "pong":
+                    await ws_manager.handle_pong(client_id)
+            except Exception:
+                pass
+    except WebSocketDisconnect:
+        await ws_manager.disconnect(client_id)
+    except Exception:
+        await ws_manager.disconnect(client_id)
+
