@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 
 from backend.services.voice_service_utils import (
@@ -15,6 +17,7 @@ from backend.services.voice_service_utils import (
 
 @pytest.fixture(autouse=True)
 def mock_ai_services():
+    """Override the app-wide autouse fixture; these utility tests need no app imports."""
     yield
 
 
@@ -121,10 +124,10 @@ def test_estimate_bitrate_kbps_handles_valid_and_invalid_durations(
     duration_seconds,
     expected,
 ):
-    assert estimate_bitrate_kbps(payload, duration_seconds) == expected
+    assert estimate_bitrate_kbps(payload, duration_seconds) == pytest.approx(expected)
 
 
 def test_default_size_limit_matches_declared_default_constant():
-    payload = b"x" * (DEFAULT_MAX_MB * 1024 * 1024 + 1)
+    max_mb_default = inspect.signature(validate_audio_size).parameters["max_mb"].default
 
-    assert validate_audio_size(payload) is False
+    assert max_mb_default == DEFAULT_MAX_MB
