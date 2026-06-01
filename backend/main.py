@@ -475,15 +475,16 @@ async def analyze_bug(request: BugReportAnalysisRequest):
 CORRECTIONS_LOG_PATH = Path(__file__).parent / "data" / "corrections_log.json"
 
 @app.post("/ai/log_correction")
-async def log_correction(raw_request: Request):
+@limiter.limit("10/minute")
+async def log_correction(raw_request: Request, user: dict = Depends(get_current_user)):
     """Log an admin correction when the AI prediction differs from the human decision."""
     try:
         body = await raw_request.json()
     except Exception as e:
-        print(f"[CORRECTION ERROR] Could not parse request body: {e}")
+        logger.error(f"[CORRECTION ERROR] Could not parse request body: {e}")
         return {"status": "error", "message": "Invalid JSON body"}
 
-    print(f"[CORRECTION RECEIVED] Payload keys: {list(body.keys())}")
+    logger.info(f"[CORRECTION RECEIVED] Payload keys: {list(body.keys())}")
 
     ticket_id = str(body.get("ticket_id", "unknown"))
     original_text = str(body.get("original_text", ""))
@@ -503,6 +504,7 @@ async def log_correction(raw_request: Request):
 
     entry = {
         "ticket_id": ticket_id,
+        "user_id": user.get("id"),
         "original_text": original_text,
         "ocr_text": ocr_text,
         "original_prediction": original_prediction,
@@ -512,23 +514,37 @@ async def log_correction(raw_request: Request):
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
 
+    # Use file lock to prevent race conditions during read-modify-write
+    lock_path = str(CORRECTIONS_LOG_PATH) + ".lock"
+    lock = FileLock(lock_path, timeout=10)
+
     try:
-        if CORRECTIONS_LOG_PATH.exists() and CORRECTIONS_LOG_PATH.stat().st_size > 2:
-            with open(CORRECTIONS_LOG_PATH, "r", encoding="utf-8") as f:
-                logs = json.load(f)
-        else:
-            logs = []
+        # Run file I/O in thread pool to avoid blocking the event loop
+        def _write_log():
+            with lock:
+                if CORRECTIONS_LOG_PATH.exists() and CORRECTIONS_LOG_PATH.stat().st_size > 2:
+                    with open(CORRECTIONS_LOG_PATH, "r", encoding="utf-8") as f:
+                        logs = json.load(f)
+                else:
+                    logs = []
 
-        logs.append(entry)
+                # Enforce entry cap
+                CORRECTIONS_LOG_MAX = int(os.getenv("CORRECTIONS_LOG_MAX", "10000"))
+                if len(logs) >= CORRECTIONS_LOG_MAX:
+                    logs = logs[-(CORRECTIONS_LOG_MAX - 1):]
 
-        with open(CORRECTIONS_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(logs, f, indent=2)
+                logs.append(entry)
 
-        print(f"[CORRECTION SAVED] Ticket ID: {ticket_id} | Changed: {changed_fields}")
+                with open(CORRECTIONS_LOG_PATH, "w", encoding="utf-8") as f:
+                    json.dump(logs, f, indent=2)
+
+        await asyncio.get_event_loop().run_in_executor(None, _write_log)
+
+        logger.info(f"[CORRECTION SAVED] Ticket ID: {ticket_id} | Changed: {changed_fields}")
         return {"status": "saved", "changed_fields": changed_fields}
 
     except Exception as e:
-        print(f"[CORRECTION ERROR] Could not save: {e}")
+        logger.error(f"[CORRECTION ERROR] Could not save: {e}")
         return {"status": "error", "message": str(e)}
 
 
@@ -536,20 +552,31 @@ async def log_correction(raw_request: Request):
 # Ticket operations (Now via Supabase)
 # ---------------------------------------------------------------------------
 @app.get("/tickets")
-async def get_tickets(company_id: str | None = None):
-    """Fetch persistent tickets from Supabase."""
+async def get_tickets(
+    company_id: str | None = None,
+    user: dict = Depends(get_current_user),
+):
+    """Fetch persistent tickets from Supabase (tenant-isolated)."""
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
-    
+
+    # Resolve caller's company for tenant isolation
+    user_id = user.get("id")
+    user_metadata = user.get("user_metadata", {})
+    user_company_id = user_metadata.get("company_id") or company_id
+
     query = supabase.table("tickets").select("*").order("created_at", desc=True)
-    if company_id:
-        query = query.eq("company_id", company_id)
-        
+    if user_company_id:
+        query = query.eq("company_id", user_company_id)
+
     res = query.execute()
     return res.data
 
 @app.post("/tickets/save")
-async def save_ticket(request_body: TicketSaveRequest):
+async def save_ticket(
+    request_body: TicketSaveRequest,
+    user: dict = Depends(get_current_user),
+):
     """
     OFFICIAL PERSISTENCE: Saves the analyzed ticket to Supabase.
     This is called AFTER the user confirms the analysis results.
@@ -561,26 +588,29 @@ async def save_ticket(request_body: TicketSaveRequest):
     try:
         final_data = request_body.dict()
 
+        # Use authenticated user_id (prevent identity spoofing)
+        auth_user_id = user.get("id")
+        final_data["user_id"] = auth_user_id
+
         # Resolve tenant linkage from user profile with authorization validation.
         profile = {}
-        if request_body.user_id:
-            try:
-                profile_res = (
-                    supabase.table("profiles")
-                    .select("company_id, company")
-                    .eq("id", request_body.user_id)
-                    .single()
-                    .execute()
-                )
-                profile = profile_res.data or {}
-                if not profile:
-                    raise HTTPException(status_code=404, detail="User profile not found")
-            except HTTPException:
-                raise
-            except Exception as profile_error:
-                user_hash = hashlib.sha256(str(request_body.user_id).encode()).hexdigest()[:8]
-                logger.error(f"Tenant resolution error for user {user_hash}: {profile_error}")
-                raise HTTPException(status_code=503, detail="Failed to resolve tenant linkage") from profile_error
+        try:
+            profile_res = (
+                supabase.table("profiles")
+                .select("company_id, company")
+                .eq("id", auth_user_id)
+                .single()
+                .execute()
+            )
+            profile = profile_res.data or {}
+            if not profile:
+                raise HTTPException(status_code=404, detail="User profile not found")
+        except HTTPException:
+            raise
+        except Exception as profile_error:
+            user_hash = hashlib.sha256(str(auth_user_id).encode()).hexdigest()[:8]
+            logger.error(f"Tenant resolution error for user {user_hash}: {profile_error}")
+            raise HTTPException(status_code=503, detail="Failed to resolve tenant linkage") from profile_error
 
         # Validate tenant consistency and authorization.
         profile_company_id = profile.get("company_id")
@@ -652,19 +682,27 @@ async def save_ticket(request_body: TicketSaveRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/tickets/{ticket_id}")
-async def get_ticket_by_id(ticket_id: str):
-    """Fetch single persistent ticket."""
+async def get_ticket_by_id(ticket_id: str, user: dict = Depends(get_current_user)):
+    """Fetch single persistent ticket (tenant-isolated)."""
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
-    
+
     res = supabase.table("tickets").select("*").eq("id", ticket_id).single().execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Tenant isolation: verify ticket belongs to caller's company
+    user_metadata = user.get("user_metadata", {})
+    user_company_id = user_metadata.get("company_id")
+    ticket_company_id = res.data.get("company_id")
+    if user_company_id and ticket_company_id and user_company_id != ticket_company_id:
+        raise HTTPException(status_code=403, detail="Access denied: ticket belongs to a different company")
+
     return res.data
 
 
 @app.post("/tickets", response_model=TicketRecord)
-async def create_ticket(ticket: TicketRecord):
+async def create_ticket(ticket: TicketRecord, user: dict = Depends(get_current_user)):
     """Save a new ticket into the system."""
     # Check for duplicates before adding
     existing = next((t for t in TICKETS_DB if t.ticket_id == ticket.ticket_id), None)
@@ -677,7 +715,7 @@ async def create_ticket(ticket: TicketRecord):
 
 
 @app.patch("/tickets/{ticket_id}", response_model=TicketRecord)
-async def update_ticket(ticket_id: str, updates: dict):
+async def update_ticket(ticket_id: str, updates: dict, user: dict = Depends(get_current_user)):
     """Partially update a ticket's fields (e.g., status, viewed_at)."""
     for i, ticket in enumerate(TICKETS_DB):
         if str(ticket.ticket_id) == str(ticket_id):
