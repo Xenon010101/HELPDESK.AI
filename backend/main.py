@@ -1209,3 +1209,35 @@ async def auth_logout(response: Response):
 async def auth_me(user: dict = Depends(get_current_user)):
     return {"user": user}
 
+
+# ---------------------------------------------------------------------------
+# SLA Escalation endpoints (Issue #914)
+# ---------------------------------------------------------------------------
+from backend.services.sla_escalation_service import SLAEscalationService
+
+_sla_service = SLAEscalationService()
+
+
+@app.get("/admin/sla/breaches")
+async def get_sla_breaches(company_id: str | None = None):
+    """
+    Return a list of tickets that have breached their SLA and are not yet resolved.
+    Optionally filtered by company_id.
+    """
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database connection offline")
+    breaches = _sla_service.check_breaches(supabase, company_id=company_id)
+    return {"count": len(breaches), "breaches": breaches}
+
+
+@app.post("/admin/sla/run-sweep")
+async def run_sla_sweep(company_id: str | None = None, send_alerts: bool = True):
+    """
+    Trigger a manual SLA sweep: detect breaches, escalate tickets, send webhook alerts.
+    Returns sweep statistics.
+    """
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database connection offline")
+    stats = _sla_service.run_sweep(supabase, company_id=company_id, send_alerts=send_alerts)
+    return stats
+
