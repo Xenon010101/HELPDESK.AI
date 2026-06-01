@@ -17,10 +17,10 @@ const AdminProtectedRoute = () => {
         );
     }
 
-    // Check if the user is authenticated from Supabase
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
+  // Check if the user is authenticated from Supabase
+  if (!user) {
+    return <Navigate to='/login' replace />;
+  }
 
     // If we have a user but no profile yet, wait for the database fetch
     if (!profile || profile.role === undefined) {
@@ -31,22 +31,22 @@ const AdminProtectedRoute = () => {
         );
     }
 
-    // Check if the user's profile role is 'admin' or 'super_admin'
-    // Enforce role
-    if (profile.role !== "admin" && profile.role !== "super_admin") {
-        // Basic redirect for non-admins if they try to access admin routes
-        return <Navigate to="/" replace />;
-    }
+  // Check if the user's profile role is 'admin' or 'super_admin'
+  // Enforce role
+  if (profile.role !== 'admin' && profile.role !== 'super_admin') {
+    // Basic redirect for non-admins if they try to access admin routes
+    return <Navigate to='/' replace />;
+  }
 
-    // Enforce active status for admins (Master Admin approval)
-    if (profile.status === "rejected") {
-        return <Navigate to="/not-approved" replace />;
-    } else if (profile.status !== "active") {
-        return <Navigate to="/admin-lobby" replace />;
-    }
+  // Enforce active status for admins (Master Admin approval)
+  if (profile.status === 'rejected') {
+    return <Navigate to='/not-approved' replace />;
+  } else if (profile.status !== 'active') {
+    return <Navigate to='/admin-lobby' replace />;
+  }
 
-    // Authorised and active: render the protected layout
-    return <Outlet />;
+  // Authorised and active: render the protected layout
+  return <Outlet />;
 };
 
 export default AdminProtectedRoute;

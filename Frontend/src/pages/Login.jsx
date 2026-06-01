@@ -24,15 +24,15 @@ function Login() {
   // Auto-redirect if already logged in
   useEffect(() => {
     if (user && profile) {
-      if (profile.status === "active") {
-        if (profile.role === "master_admin") navigate("/master-admin/dashboard");
-        else if (profile.role === "admin") navigate("/admin/dashboard");
-        else if (profile.role === "user") navigate("/dashboard");
-      } else if (profile.status === "pending_approval") {
-        if (profile.role === "admin") navigate("/admin-lobby");
-        else if (profile.role === "user") navigate("/user-lobby");
-      } else if (profile.status === "rejected") {
-        navigate("/not-approved");
+      if (profile.status === 'active') {
+        if (profile.role === 'master_admin') navigate('/master-admin/dashboard');
+        else if (profile.role === 'admin') navigate('/admin/dashboard');
+        else if (profile.role === 'user') navigate('/dashboard');
+      } else if (profile.status === 'pending_approval') {
+        if (profile.role === 'admin') navigate('/admin-lobby');
+        else if (profile.role === 'user') navigate('/user-lobby');
+      } else if (profile.status === 'rejected') {
+        navigate('/not-approved');
       }
     }
   }, [user, profile, navigate]);
@@ -40,7 +40,7 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Please enter your email and password");
+      setError('Please enter your email and password');
       return;
     }
 
@@ -51,11 +51,11 @@ function Login() {
       const { profile } = await login(email, password);
 
       if (!profile) {
-        throw new Error("User profile not found. Please contact support.");
+        throw new Error('User profile not found. Please contact support.');
       }
 
-      if (profile.status === "pending_email_verification") {
-        throw new Error("Please verify your email first.");
+      if (profile.status === 'pending_email_verification') {
+        throw new Error('Please verify your email first.');
       }
 
       if (profile.status === "rejected") {
@@ -63,14 +63,14 @@ function Login() {
         return;
       }
 
-      if (profile.role === "master_admin" && profile.status === "active") {
-        navigate("/master-admin/dashboard");
-      } else if (profile.role === "admin") {
-        if (profile.status === "active") navigate("/admin/dashboard");
-        else if (profile.status === "pending_approval") navigate("/admin-lobby");
-      } else if (profile.role === "user") {
-        if (profile.status === "active") navigate("/dashboard");
-        else if (profile.status === "pending_approval") navigate("/user-lobby");
+      if (profile.role === 'master_admin' && profile.status === 'active') {
+        navigate('/master-admin/dashboard');
+      } else if (profile.role === 'admin') {
+        if (profile.status === 'active') navigate('/admin/dashboard');
+        else if (profile.status === 'pending_approval') navigate('/admin-lobby');
+      } else if (profile.role === 'user') {
+        if (profile.status === 'active') navigate('/dashboard');
+        else if (profile.status === 'pending_approval') navigate('/user-lobby');
       }
     } catch (err) {
       console.error("Login component error:", err);
@@ -87,7 +87,7 @@ function Login() {
   const handleMagicLink = async (e) => {
     e.preventDefault();
     if (!email) {
-      setError("Please enter your email address");
+      setError('Please enter your email address');
       return;
     }
 
@@ -387,7 +387,7 @@ function Login() {
                       Forgot password?
                     </Link>
                   </div>
-                  <div className="relative">
+                  <div className='relative'>
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
@@ -397,11 +397,11 @@ function Login() {
                       required={!isMagicLink}
                     />
                     <button
-                      type="button"
+                      type='button'
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-400 transition-colors"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className='w-5 h-5' /> : <Eye className='w-5 h-5' />}
                     </button>
                   </div>
                 </motion.div>
@@ -467,7 +467,7 @@ function Login() {
                 onClick={() => { setIsMagicLink(!isMagicLink); setError(""); }}
                 className="w-full py-3.5 bg-transparent border border-green-100 dark:border-emerald-500/20 text-green-700 dark:text-emerald-400 rounded-xl font-semibold text-sm hover:bg-green-50 dark:hover:bg-emerald-500/10 transition-all active:scale-[0.98]"
               >
-                {isMagicLink ? "Sign in with Password" : "Sign in with Magic Link"}
+                {isMagicLink ? 'Sign in with Password' : 'Sign in with Magic Link'}
               </button>
 
               <p className="text-center" style={{ fontSize: '14px', color: '#6b7280', marginTop: '20px' }}>

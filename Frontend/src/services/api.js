@@ -104,7 +104,7 @@ export const api = {
     }
   },
 
-  predictTicket: async (issueText, imageBase64 = "") => {
+  predictTicket: async (issueText, imageBase64 = '') => {
     try {
       const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
       // ALWAYS call the real backend for prediction if possible
@@ -120,7 +120,7 @@ export const api = {
       // Map backend response to frontend format
       return {
         data: {
-          ticket_id: "TCKT-" + Math.floor(Math.random() * 10000),
+          ticket_id: 'TCKT-' + Math.floor(Math.random() * 10000),
           category: result.category,
           subcategory: result.subcategory,
           priority: result.priority,
@@ -166,5 +166,5 @@ export const api = {
     } catch (error) {
       console.warn("[Correction Log] Failed to save correction:", error);
     }
-  }
+  },
 };

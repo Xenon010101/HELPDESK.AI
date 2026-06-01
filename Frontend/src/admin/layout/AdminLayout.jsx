@@ -19,24 +19,27 @@ const AdminLayout = () => {
     // Rapid keyboard navigation (G+D, G+T, …) and Ctrl+F search focus.
     useKeyboardShortcuts();
 
-    return (
-        <div className="flex h-screen bg-[#f8faf9] overflow-hidden font-sans">
-            {/* Master Navigation Column (Responsive) */}
-            <div 
-                className={`hidden md:block flex-shrink-0 relative z-40 transition-all duration-300`}
-                style={{ width: isSidebarCollapsed ? '80px' : '260px' }}
-            >
-                <AdminSidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-            </div>
+  return (
+    <div className='flex h-screen bg-[#f8faf9] overflow-hidden font-sans'>
+      {/* Master Navigation Column (Responsive) */}
+      <div
+        className={`hidden md:block flex-shrink-0 relative z-40 transition-all duration-300`}
+        style={{ width: isSidebarCollapsed ? '80px' : '260px' }}
+      >
+        <AdminSidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+      </div>
 
-            {/* Viewport Execution Layer */}
-            <div className="flex-1 flex flex-col min-w-0 relative h-full">
-                {/* Global Command Header */}
-                <AdminHeader 
-                    onMobileNavToggle={() => setIsMobileNavOpen(!isMobileNavOpen)} 
-                    isSidebarCollapsed={isSidebarCollapsed}
-                    onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                />
+      {/* Viewport Execution Layer */}
+      <div className='flex-1 flex flex-col min-w-0 relative h-full'>
+        {/* Global Command Header */}
+        <AdminHeader
+          onMobileNavToggle={() => setIsMobileNavOpen(!isMobileNavOpen)}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
 
                 {/* Operational Workspace */}
                 <main id="admin-main-content" className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative">
@@ -47,8 +50,8 @@ const AdminLayout = () => {
                 </main>
             </div>
 
-            {/* Real-time System Notifications */}
-            <NotificationToast />
+      {/* Real-time System Notifications */}
+      <NotificationToast />
 
             {/* Keyboard Shortcuts Help Modal */}
             <ShortcutsHelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} isAdmin={true} />
@@ -68,7 +71,9 @@ const AdminLayout = () => {
                 </div>
             )}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default AdminLayout;

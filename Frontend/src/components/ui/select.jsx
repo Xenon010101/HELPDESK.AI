@@ -1,23 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
- 
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Select = ({ value, onChange, options, placeholder = "Select an option", className = "", buttonClassName = "", disabled = false, 'aria-label': ariaLabel, ...props }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
 
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    const selectedOption = options.find(opt => String(opt.value) === String(value)) || null;
+  const selectedOption = options.find((opt) => String(opt.value) === String(value)) || null;
 
     return (
         <div ref={containerRef} className={`relative ${className || 'flex-1'}`} {...props}>
@@ -61,15 +61,17 @@ export const Select = ({ value, onChange, options, placeholder = "Select an opti
                                             ? 'bg-emerald-50 text-emerald-700 font-bold'
                                             : 'text-slate-700 font-medium hover:bg-slate-50'
                                         }`}
-                                >
-                                    <span className="truncate">{option.label}</span>
-                                    {String(value) === String(option.value) && <Check className="w-4 h-4 shrink-0 text-emerald-600 ml-2" />}
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+                >
+                  <span className='truncate'>{option.label}</span>
+                  {String(value) === String(option.value) && (
+                    <Check className='w-4 h-4 shrink-0 text-emerald-600 ml-2' />
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };

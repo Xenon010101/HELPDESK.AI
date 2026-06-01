@@ -26,28 +26,23 @@ const ProtectedRoute = () => {
             </div>
         );
     }
-
-    if (!user) {
-        return <Navigate to="/login" replace />;
+    if (
+      profile.role === 'admin' &&
+      profile.status === 'active' &&
+      !currentPath.startsWith('/admin')
+    ) {
+      return <Navigate to='/admin/dashboard' replace />;
     }
-
-    // Redirect specific roles to their dedicated portals if they hit a generic protected route,
-    // BUT prevent infinite loops if they are already on those routes.
-    const currentPath = window.location.pathname;
-
-    if (profile) {
-        if (profile.role === 'master_admin' && !currentPath.startsWith('/master-admin')) {
-            return <Navigate to="/master-admin/dashboard" replace />;
-        }
-        if (profile.role === 'admin' && profile.status === 'active' && !currentPath.startsWith('/admin')) {
-            return <Navigate to="/admin/dashboard" replace />;
-        }
-        if (profile.role === 'user' && profile.status !== 'active' && !currentPath.startsWith('/user-lobby')) {
-            return <Navigate to="/user-lobby" replace />;
-        }
+    if (
+      profile.role === 'user' &&
+      profile.status !== 'active' &&
+      !currentPath.startsWith('/user-lobby')
+    ) {
+      return <Navigate to='/user-lobby' replace />;
     }
+  }
 
-    return <Outlet />;
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

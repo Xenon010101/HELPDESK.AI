@@ -6,15 +6,15 @@ import { BrainCircuit, Mail, ArrowLeft, Loader2, CheckCircle2, Lock, KeyRound, A
 import { motion, AnimatePresence } from "framer-motion";
 
 function ForgotPassword() {
-    const [step, setStep] = useState(1);
-    const [email, setEmail] = useState("");
-    const [otp, setOtp] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
-    const [timeLeft, setTimeLeft] = useState(900);
-    const [timerExpired, setTimerExpired] = useState(false);
+  const [step, setStep] = useState(1);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(900);
+  const [timerExpired, setTimerExpired] = useState(false);
 
     useEffect(() => {
         if (step !== 2) return;
@@ -45,9 +45,17 @@ function ForgotPassword() {
             setError("Please enter your email address");
             return;
         }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [step]);
 
-        setLoading(true);
-        setError("");
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email);
@@ -62,62 +70,59 @@ function ForgotPassword() {
         }
     };
 
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        if (!otp || otp.length !== 6) {
-            setError("Please enter the 6-digit code");
-            return;
-        }
-        if (timerExpired) {
-            setError("Your code has expired. Please request a new one.");
-            return;
-        }
+      if (error) throw error;
 
-        setLoading(true);
-        setError("");
+      setMessage('Check your email for the 6-digit recovery code!');
+      setStep(2);
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        try {
-            const { error } = await supabase.auth.verifyOtp({
-                email,
-                token: otp,
-                type: 'recovery'
-            });
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      setError('Please enter the 6-digit code');
+      return;
+    }
+    if (timerExpired) {
+      setError('Your code has expired. Please request a new one.');
+      return;
+    }
 
-            if (error) throw error;
-            setStep(3);
-            setMessage("Code verified. Please enter your new password.");
-        } catch (err) {
-            console.error("OTP verification error:", err);
-            setError("Invalid or expired code. Please check your email and try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    setError('');
 
-    const handleUpdatePassword = async (e) => {
-        e.preventDefault();
-        if (!newPassword || newPassword.length < 6) {
-            setError("Password must be at least 6 characters long.");
-            return;
-        }
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'recovery',
+      });
 
-        setLoading(true);
-        setError("");
+      if (error) throw error;
+      setStep(3);
+      setMessage('Code verified. Please enter your new password.');
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setError('Invalid or expired code. Please check your email and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        try {
-            const { error } = await supabase.auth.updateUser({
-                password: newPassword
-            });
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
 
-            if (error) throw error;
-            setStep(4);
-        } catch (err) {
-            console.error("Update password error:", err);
-            setError(err.message || "Failed to update password.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    setError('');
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center font-sans relative overflow-hidden p-6 py-12 bg-gradient-to-br from-[#f0fdf4] via-[#dcfce7] to-[#bbf7d0] dark:from-[#102219] dark:via-[#142f22] dark:to-[#173a2a] text-slate-900 dark:text-slate-100 transition-colors duration-200">

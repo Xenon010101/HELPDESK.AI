@@ -26,6 +26,7 @@ const buildConfigList = () => {
     openrouterModels.forEach((model) => {
         configs.push({ provider: 'openrouter', model });
     });
+  });
 
     // Priority 3: Groq — use stable, currently-available models
     const groqModels = ['llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
@@ -33,9 +34,22 @@ const buildConfigList = () => {
         configs.push({ provider: 'groq', model });
     });
 
-    return configs;
-};
+  // Priority 3: Groq — use stable models
+  const groqKeys = [
+    env.VITE_GROQ_API_KEY_1,
+    env.VITE_GROQ_API_KEY_2,
+    env.VITE_GROQ_API_KEY_3,
+  ].filter(Boolean);
+  const groqModels = (
+    env.VITE_AI_GROQ_MODELS || 'llama-3.1-8b-instant,mixtral-8x7b-32768,gemma2-9b-it'
+  ).split(',');
 
+  groqKeys.forEach((key, idx) => {
+    configs.push({ provider: 'groq', key, model: groqModels[idx % groqModels.length].trim() });
+  });
+
+  return configs;
+};
 
 // ============================================================
 // PROVIDER HANDLERS
@@ -56,6 +70,8 @@ const buildGeminiMessages = (promptText, history, image) => {
         const [mime, data] = image.split(';base64,');
         messageParts.push({ inlineData: { mimeType: mime.split(':')[1] || 'image/png', data } });
     }
+    return { role: msg.role === 'bot' ? 'model' : 'user', parts };
+  });
 
     return formattedHistory.length > 0
         ? [...formattedHistory, { role: 'user', parts: messageParts }]
@@ -77,9 +93,12 @@ const buildOpenAICompatMessages = (promptText, history, image) => {
         };
     });
 
-    const userContent = image
-        ? [{ type: "text", text: promptText }, { type: "image_url", image_url: { url: image } }]
-        : promptText;
+  const userContent = image
+    ? [
+        { type: 'text', text: promptText },
+        { type: 'image_url', image_url: { url: image } },
+      ]
+    : promptText;
 
     messages.push({ role: "user", content: userContent });
     return messages;
@@ -149,7 +168,7 @@ const runWithFailover = async (promptText, history, image) => {
     const configList = buildConfigList();
     if (configList.length === 0) throw new Error("No AI providers configured");
 
-    const blacklistedKeys = new Set();
+  const blacklistedKeys = new Set();
 
     for (let i = 0; i < configList.length; i++) {
         const config = configList[i];
@@ -185,16 +204,72 @@ const runWithFailover = async (promptText, history, image) => {
         }
     }
 
-    throw new Error("QUOTA_EXCEEDED: All AI API keys exhausted. Please wait a few minutes and try again.");
+    console.log(
+      `[AI Failover] Trying ${i + 1}/${configList.length}: ${config.provider} (${config.model})`
+    );
+
+    try {
+      if (config.provider === 'gemini') {
+        return await callGemini(config, promptText, history, image);
+      } else if (config.provider === 'openrouter') {
+        return await callOpenAICompat(
+          config,
+          promptText,
+          history,
+          image,
+          'https://openrouter.ai/api/v1',
+          { 'HTTP-Referer': API_CONFIG.FRONTEND_URL, 'X-Title': 'AI Helpdesk' }
+        );
+      } else if (config.provider === 'groq') {
+        return await callOpenAICompat(
+          config,
+          promptText,
+          history,
+          null, // Groq = text only
+          'https://api.groq.com/openai/v1'
+        );
+      }
+    } catch (error) {
+      const isRateLimit =
+        error.status === 429 ||
+        error.message?.includes('429') ||
+        error.message?.includes('quota') ||
+        error.message?.includes('RESOURCE_EXHAUSTED') ||
+        error.message?.includes('rate_limit');
+
+      const isExpiredOrInvalid =
+        error.message?.includes('API_KEY_INVALID') ||
+        error.message?.includes('API key expired') ||
+        error.message?.includes('invalid') ||
+        error.message?.includes('expired') ||
+        error.status === 401 ||
+        error.status === 403;
+
+      if (isExpiredOrInvalid) {
+        blacklistedKeys.add(config.key);
+        console.warn(`[AI Failover] Blacklisted invalid/expired key for ${config.provider}`);
+      }
+
+      console.warn(
+        `[AI Failover] ❌ ${config.provider} key ${i + 1}: ${isRateLimit ? 'Quota exceeded' : error.message}`
+      );
+    }
+  }
+
+  throw new Error(
+    'QUOTA_EXCEEDED: All AI API keys exhausted. Please wait a few minutes and try again.'
+  );
 };
 
 // ─── Smart offline fallback (used when ALL providers fail) ───────────────────
 // Generates a reasonable ticket summary locally so the flow never fully breaks.
 const localFallbackSummary = (issueText) => {
-    const text = issueText.trim();
-    // Capitalise first letter, truncate at 100 chars
-    const summary = (text.charAt(0).toUpperCase() + text.slice(1)).substring(0, 100) + (text.length > 100 ? '…' : '');
-    return { summary, image_description: '' };
+  const text = issueText.trim();
+  // Capitalise first letter, truncate at 100 chars
+  const summary =
+    (text.charAt(0).toUpperCase() + text.slice(1)).substring(0, 100) +
+    (text.length > 100 ? '…' : '');
+  return { summary, image_description: '' };
 };
 
 const getSlaBreachAt = (priority = 'Medium') => {
@@ -208,7 +283,7 @@ const getSlaBreachAt = (priority = 'Medium') => {
 // EXPORT 1: askAI — Used by the chat troubleshooting assistant
 // ============================================================
 export const askAI = async (prompt, ticketContext, history = [], image = null) => {
-    const systemPrompt = `You are an expert enterprise IT troubleshooting assistant.
+  const systemPrompt = `You are an expert enterprise IT troubleshooting assistant.
 Your goal is to guide the user to a resolution with extreme clarity and professionalism.
 
 STRICT FORMATTING RULES:
@@ -226,11 +301,12 @@ Context:
 - Entities: ${JSON.stringify(ticketContext?.entities || [])}
 - OCR Text: ${ticketContext?.ocr_text || 'None'}`;
 
-    const effectivePrompt = history.length === 0
-        ? `${systemPrompt}\n\nUSER REQUEST: ${prompt}`
-        : `${prompt}\n\n(Reminder: Follow all system formatting and context rules)`;
+  const effectivePrompt =
+    history.length === 0
+      ? `${systemPrompt}\n\nUSER REQUEST: ${prompt}`
+      : `${prompt}\n\n(Reminder: Follow all system formatting and context rules)`;
 
-    return runWithFailover(effectivePrompt, history, image);
+  return runWithFailover(effectivePrompt, history, image);
 };
 
 // ============================================================
@@ -238,12 +314,12 @@ Context:
 // Generates a smart AI summary and optional image description.
 // ============================================================
 export const analyzeTicketWithAI = async (issueText, ocrText = '', image = null) => {
-    const imageNote = ocrText ? `\nExtracted text from uploaded screenshot: "${ocrText}"` : '';
-    const imageInstruction = image
-        ? '\nAn image has also been provided. Analyze it and describe the visible error or issue.'
-        : '';
+  const imageNote = ocrText ? `\nExtracted text from uploaded screenshot: "${ocrText}"` : '';
+  const imageInstruction = image
+    ? '\nAn image has also been provided. Analyze it and describe the visible error or issue.'
+    : '';
 
-    const prompt = `You are an enterprise IT analyst. Given the following user-reported issue, do three things:
+  const prompt = `You are an enterprise IT analyst. Given the following user-reported issue, do three things:
 1. Write a concise one-line summary (max 100 chars) of the core technical problem.
 2. If an image is provided, describe the visible error/UI state in one sentence.
 3. Classify the ticket accurately, regardless of the language it is written in (translate internally if needed).
@@ -261,12 +337,12 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
 
 User Issue: "${issueText}"${imageNote}${imageInstruction}`;
 
-    try {
-        const raw = await runWithFailover(prompt, [], image);
+  try {
+    const raw = await runWithFailover(prompt, [], image);
 
-        // Strip any markdown code fences the model might add
-        const cleaned = raw.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(cleaned);
+    // Strip any markdown code fences the model might add
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
 
         return {
             summary: parsed.summary || issueText.substring(0, 100),

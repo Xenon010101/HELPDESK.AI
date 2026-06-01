@@ -33,8 +33,8 @@ const actions = [
 ];
 
 const QuickActions = () => {
-    const navigate = useNavigate();
-    const [hoveredIdx, setHoveredIdx] = useState(null);
+  const navigate = useNavigate();
+  const [hoveredIdx, setHoveredIdx] = useState(null);
 
     const handleActionClick = (action) => {
         navigate('/create-ticket', { state: { templateId: action.templateId, prefilledCategory: action.category } });
@@ -67,19 +67,29 @@ const QuickActions = () => {
                         <action.icon size={24} />
                     </div>
 
-                    <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>{action.title}</h3>
-                    <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: 1.6, marginBottom: '20px' }}>
-                        {action.description}
-                    </p>
+          <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+            {action.title}
+          </h3>
+          <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: 1.6, marginBottom: '20px' }}>
+            {action.description}
+          </p>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 600, fontSize: '13px' }}>
-                        Start Request →
-                    </div>
-                </div>
-            ))}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#16a34a',
+              fontWeight: 600,
+              fontSize: '13px',
+            }}
+          >
+            Start Request →
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
 };
 
 export default QuickActions;
-

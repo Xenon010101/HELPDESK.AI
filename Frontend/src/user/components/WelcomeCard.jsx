@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, ListTodo, Sparkles } from 'lucide-react';
 
-const WelcomeCard = ({ userName = "Ritesh" }) => {
-    const navigate = useNavigate();
+const WelcomeCard = ({ userName = 'Ritesh' }) => {
+  const navigate = useNavigate();
 
     return (
         <div

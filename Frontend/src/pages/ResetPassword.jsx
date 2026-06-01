@@ -4,13 +4,13 @@ import { supabase } from "../lib/supabaseClient";
 import { BrainCircuit, Lock, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
 
 function ResetPassword() {
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
     useEffect(() => {
         const checkSession = async () => {
@@ -53,6 +53,8 @@ function ResetPassword() {
             setLoading(false);
         }
     };
+    checkSession();
+  }, []);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center font-sans relative overflow-hidden p-6 py-12 bg-gradient-to-br from-[#f0fdf4] via-[#dcfce7] to-[#bbf7d0] dark:from-[#102219] dark:via-[#142f22] dark:to-[#173a2a] text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -169,7 +171,87 @@ function ResetPassword() {
                 </div>
             </div>
         </div>
-    );
+
+        <div className='bg-white shadow-2xl shadow-emerald-900/50 rounded-3xl p-8 border border-gray-100'>
+          <div className='text-center mb-8'>
+            <h2 className='text-2xl font-bold text-gray-900'>Set New Password</h2>
+            <p className='text-gray-500 mt-1'>Choose a strong, secure password.</p>
+          </div>
+
+          {message ? (
+            <div className='text-center py-4'>
+              <div className='w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-6'>
+                <CheckCircle2 className='w-8 h-8 text-emerald-600' />
+              </div>
+              <p className='text-gray-900 font-bold text-lg mb-2'>{message}</p>
+              <p className='text-gray-500 text-sm'>Redirecting to login...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className='space-y-6'>
+              {error && (
+                <div className='bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-3'>
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <div className='space-y-4'>
+                <div>
+                  <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                    New Password
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400'>
+                      <Lock className='w-5 h-5' />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder='Min. 8 characters'
+                      className='w-full pl-12 pr-12 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none text-gray-800 placeholder:text-gray-400 font-medium bg-white'
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors'
+                    >
+                      {showPassword ? <EyeOff className='w-5 h-5' /> : <Eye className='w-5 h-5' />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                    Confirm Password
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400'>
+                      <Lock className='w-5 h-5' />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder='Repeat password'
+                      className='w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none text-gray-800 placeholder:text-gray-400 font-medium bg-white'
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type='submit'
+                disabled={loading}
+                className='w-full bg-emerald-900 text-white rounded-xl py-3.5 font-bold hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/20 active:scale-[0.98] disabled:opacity-70 disabled:grayscale flex items-center justify-center gap-2'
+              >
+                {loading ? <Loader2 className='w-5 h-5 animate-spin' /> : 'Update Password'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default ResetPassword;

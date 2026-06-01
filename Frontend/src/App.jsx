@@ -246,10 +246,12 @@ function TitleUpdater() {
     else if (path.startsWith('/admin/sla')) title = 'SLA Monitor | Admin';
     // Master Admin Routes
     else if (path.startsWith('/master-admin/dashboard')) title = 'Master Dashboard';
-    else if (path.startsWith('/master-admin/admin-requests')) title = 'Pending Requests | Master Admin';
+    else if (path.startsWith('/master-admin/admin-requests'))
+      title = 'Pending Requests | Master Admin';
     else if (path.startsWith('/master-admin/companies')) title = 'Companies | Master Admin';
     else if (path.startsWith('/master-admin/all-admins')) title = 'All Admins | Master Admin';
-    else if (path.startsWith('/master-admin/bug-reports')) title = 'System Bug Radar | Master Admin';
+    else if (path.startsWith('/master-admin/bug-reports'))
+      title = 'System Bug Radar | Master Admin';
     // User Routes
     else if (path.startsWith('/ticket/')) title = 'Ticket Detail';
     else if (path.startsWith('/ai-understanding')) title = 'AI Understanding';
@@ -358,9 +360,9 @@ function AppLayout() {
         shortcuts={shortcuts}
       />
       <Routes>
-        <Route path="/knowledge-check" element={<DuplicateDetection />} />
-        <Route path="/auto-resolve" element={<AutoResolveChat />} />
-        <Route path="/resolved" element={<Resolved />} />
+        <Route path='/knowledge-check' element={<DuplicateDetection />} />
+        <Route path='/auto-resolve' element={<AutoResolveChat />} />
+        <Route path='/resolved' element={<Resolved />} />
 
         {/* ── Public / Auth routes ─────────────────────────────────────── */}
         <Route path="/"               element={<LandingPage />} />
@@ -490,12 +492,12 @@ function App() {
         <BugReportWidget />
         <BackToTop />
         <Routes>
-          <Route path="/" element={<DocsPortal />} />
-          <Route path="/docs" element={<Navigate to="/" replace />} />
-          <Route path="/api-reference" element={<ApiReference />} />
-          <Route path="/changelog" element={<Changelog />} />
-          <Route path="/status" element={<StatusPage />} />
-          <Route path="*" element={<DocsPortal />} />
+          <Route path='/' element={<DocsPortal />} />
+          <Route path='/docs' element={<Navigate to='/' replace />} />
+          <Route path='/api-reference' element={<ApiReference />} />
+          <Route path='/changelog' element={<Changelog />} />
+          <Route path='/status' element={<StatusPage />} />
+          <Route path='*' element={<DocsPortal />} />
         </Routes>
       </BrowserRouter>
     );

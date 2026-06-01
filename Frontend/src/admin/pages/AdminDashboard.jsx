@@ -11,61 +11,134 @@ import TicketTable from "../components/TicketTable";
 
 // Inline SVG icon components
 const TicketIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
-    </svg>
+  <svg
+    width='20'
+    height='20'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <rect x='2' y='7' width='20' height='14' rx='2' />
+    <path d='M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2' />
+    <line x1='12' y1='12' x2='12' y2='16' />
+    <line x1='10' y1='14' x2='14' y2='14' />
+  </svg>
 );
 const ActivityIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-    </svg>
+  <svg
+    width='20'
+    height='20'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <polyline points='22 12 18 12 15 21 9 3 6 12 2 12' />
+  </svg>
 );
 const CpuIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
-        <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
-        <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
-        <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
-        <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
-    </svg>
+  <svg
+    width='20'
+    height='20'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <rect x='4' y='4' width='16' height='16' rx='2' />
+    <rect x='9' y='9' width='6' height='6' />
+    <line x1='9' y1='1' x2='9' y2='4' />
+    <line x1='15' y1='1' x2='15' y2='4' />
+    <line x1='9' y1='20' x2='9' y2='23' />
+    <line x1='15' y1='20' x2='15' y2='23' />
+    <line x1='20' y1='9' x2='23' y2='9' />
+    <line x1='20' y1='14' x2='23' y2='14' />
+    <line x1='1' y1='9' x2='4' y2='9' />
+    <line x1='1' y1='14' x2='4' y2='14' />
+  </svg>
 );
 const UsersIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
+  <svg
+    width='20'
+    height='20'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' />
+    <circle cx='9' cy='7' r='4' />
+    <path d='M23 21v-2a4 4 0 0 0-3-3.87' />
+    <path d='M16 3.13a4 4 0 0 1 0 7.75' />
+  </svg>
 );
 
 // AI subsystem icons
 const ClassifierIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-    </svg>
+  <svg
+    width='18'
+    height='18'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <circle cx='12' cy='12' r='3' />
+    <path d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83' />
+  </svg>
 );
 const PriorityIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-    </svg>
+  <svg
+    width='18'
+    height='18'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <line x1='8' y1='6' x2='21' y2='6' />
+    <line x1='8' y1='12' x2='21' y2='12' />
+    <line x1='8' y1='18' x2='21' y2='18' />
+    <line x1='3' y1='6' x2='3.01' y2='6' />
+    <line x1='3' y1='12' x2='3.01' y2='12' />
+    <line x1='3' y1='18' x2='3.01' y2='18' />
+  </svg>
 );
 const SemanticIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-    </svg>
+  <svg
+    width='18'
+    height='18'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <circle cx='11' cy='11' r='8' />
+    <line x1='21' y1='21' x2='16.65' y2='16.65' />
+    <line x1='11' y1='8' x2='11' y2='14' />
+    <line x1='8' y1='11' x2='14' y2='11' />
+  </svg>
 );
 const DuplicateIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-    </svg>
+  <svg
+    width='18'
+    height='18'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+  >
+    <rect x='8' y='8' width='13' height='13' rx='2' />
+    <path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' />
+  </svg>
 );
 
 const aiIconMap = [
-    { icon: <ClassifierIcon />, bg: '#F0FDF4', color: '#16a34a' },
-    { icon: <PriorityIcon />, bg: '#EFF6FF', color: '#3b82f6' },
-    { icon: <SemanticIcon />, bg: '#F5F0FF', color: '#8b5cf6' },
-    { icon: <DuplicateIcon />, bg: '#FFF7ED', color: '#f97316' },
+  { icon: <ClassifierIcon />, bg: '#F0FDF4', color: '#16a34a' },
+  { icon: <PriorityIcon />, bg: '#EFF6FF', color: '#3b82f6' },
+  { icon: <SemanticIcon />, bg: '#F5F0FF', color: '#8b5cf6' },
+  { icon: <DuplicateIcon />, bg: '#FFF7ED', color: '#f97316' },
 ];
 
 function isTerminalTicket(ticket) {
@@ -170,25 +243,26 @@ const AdminDashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const metrics = useMemo(() => {
-        const total = tickets.length;
-        const active = tickets.filter(t => !t.status?.toLowerCase()?.includes('resolv') && !t.status?.toLowerCase()?.includes('closed')).length;
-        const autoResolved = tickets.filter(t => t.status?.toLowerCase()?.includes('auto')).length;
-        const humanEscalated = tickets.filter(t => t.status?.toLowerCase()?.includes('progress') || t.status?.toLowerCase()?.includes('escalat')).length;
-        return { total, active, autoResolved, humanEscalated };
-    }, [tickets]);
+      fetchStats();
+      const interval = setInterval(fetchStats, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [profile]);
 
-    const aiSubsystems = useMemo(() => {
-        const totalCount = tickets.length || 1;
-        const categorized = tickets.filter(t => t.category && t.category.toLowerCase() !== 'unassigned' && t.category !== 'Other').length;
-        const prioritized = tickets.filter(t => t.priority).length;
-        return [
-            { name: 'Classifier Engine', status: categorized > 0 ? 'Active' : 'Standby', latency: `${((categorized / totalCount) * 100).toFixed(0)}% Coverage` },
-            { name: 'Priority Routing', status: prioritized > 0 ? 'Active' : 'Standby', latency: `${((prioritized / totalCount) * 100).toFixed(0)}% Routed` },
-            { name: 'Semantic Analysis', status: tickets.length > 0 ? 'Active' : 'Standby', latency: `${tickets.length} Scanned` },
-            { name: 'Duplicate Detection', status: 'Active', latency: 'Optimal' },
-        ];
-    }, [tickets]);
+  const metrics = useMemo(() => {
+    const total = tickets.length;
+    const active = tickets.filter(
+      (t) =>
+        !t.status?.toLowerCase()?.includes('resolv') && !t.status?.toLowerCase()?.includes('closed')
+    ).length;
+    const autoResolved = tickets.filter((t) => t.status?.toLowerCase()?.includes('auto')).length;
+    const humanEscalated = tickets.filter(
+      (t) =>
+        t.status?.toLowerCase()?.includes('progress') ||
+        t.status?.toLowerCase()?.includes('escalat')
+    ).length;
+    return { total, active, autoResolved, humanEscalated };
+  }, [tickets]);
 
     const slaBoard = useMemo(() => {
         const actionable = tickets.filter(t => !isTerminalTicket(t));
@@ -294,9 +368,39 @@ const AdminDashboard = () => {
                             Recent Tickets
                         </h2>
                     </div>
-                    <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #f0fdf4', boxShadow: '0 2px 16px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                        <TicketTable tickets={tickets} limit={10} isLoading={isLoading} />
+                    <div>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                        {sub.name}
+                      </p>
+                      <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '1px' }}>
+                        Status: {sub.latency}
+                      </p>
                     </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '3px 10px',
+                      background: sub.status === 'Active' ? '#dcfce7' : '#f3f4f6',
+                      color: sub.status === 'Active' ? '#15803d' : '#6b7280',
+                      border: sub.status === 'Active' ? '1px solid #bbf7d0' : '1px solid #e5e7eb',
+                      borderRadius: '100px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: sub.status === 'Active' ? '#22c55e' : '#9ca3af',
+                      }}
+                    ></div>
+                    <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
+                      {sub.status}
+                    </span>
+                  </div>
                 </div>
 
                 {/* AI System Health */}
@@ -342,17 +446,21 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </div>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Pulse dot animation */}
-            <style>{`
+      {/* Pulse dot animation */}
+      <style>{`
                 @keyframes pulse-dot {
                     0%, 100% { transform: scale(1); opacity: 1; }
                     50% { transform: scale(1.4); opacity: 0.7; }
                 }
             `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default AdminDashboard;

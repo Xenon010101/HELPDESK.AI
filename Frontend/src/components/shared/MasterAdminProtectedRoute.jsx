@@ -28,21 +28,21 @@ const MasterAdminProtectedRoute = () => {
         );
     }
 
-    // Not authenticated at all
-    if (!user) {
-        return <Navigate to="/master-admin-login" replace />;
-    }
+  // Not authenticated at all
+  if (!user) {
+    return <Navigate to='/master-admin-login' replace />;
+  }
 
-    // Authenticated but not a master_admin — redirect to hidden login
-    // (intentionally NOT to /dashboard to avoid leaking portal existence)
-    if (profile?.role !== 'master_admin') {
-        console.warn(
-            `[MasterAdminPortal] Unauthorized access attempt by ${user.email} (role: ${profile?.role})`
-        );
-        return <Navigate to="/master-admin-login" replace />;
-    }
+  // Authenticated but not a master_admin — redirect to hidden login
+  // (intentionally NOT to /dashboard to avoid leaking portal existence)
+  if (profile?.role !== 'master_admin') {
+    console.warn(
+      `[MasterAdminPortal] Unauthorized access attempt by ${user.email} (role: ${profile?.role})`
+    );
+    return <Navigate to='/master-admin-login' replace />;
+  }
 
-    return <Outlet />;
+  return <Outlet />;
 };
 
 export default MasterAdminProtectedRoute;

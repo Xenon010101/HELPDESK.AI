@@ -6,10 +6,10 @@ import { Eye, EyeOff, BrainCircuit, ArrowRight, Loader2, CheckCircle2, ChevronDo
 import { getPasswordValidation, getPasswordValidationMessage } from "../utils/passwordValidation";
 
 function Signup() {
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -18,11 +18,11 @@ function Signup() {
   const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [companySearch, setCompanySearch] = useState("");
+  const [companySearch, setCompanySearch] = useState('');
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
 
-  const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const dropdownRef = useRef(null);
@@ -47,7 +47,7 @@ function Signup() {
         setCompanies(data);
         setFilteredCompanies(data);
       }
-      if (error) console.error("Error fetching companies:", error);
+      if (error) console.error('Error fetching companies:', error);
       setIsLoadingCompanies(false);
     };
 
@@ -56,13 +56,9 @@ function Signup() {
     // Realtime subscription for companies
     const channel = supabase
       .channel('public:companies')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'companies' },
-        () => {
-          fetchCompanies(); // Refetch on any change
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => {
+        fetchCompanies(); // Refetch on any change
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -75,19 +71,17 @@ function Signup() {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Filter companies
   useEffect(() => {
-    if (companySearch.trim() === "") {
+    if (companySearch.trim() === '') {
       setFilteredCompanies(companies);
     } else {
       const lowerSearch = companySearch.toLowerCase();
-      setFilteredCompanies(
-        companies.filter((c) => c.name.toLowerCase().includes(lowerSearch))
-      );
+      setFilteredCompanies(companies.filter((c) => c.name.toLowerCase().includes(lowerSearch)));
     }
   }, [companySearch, companies]);
 
@@ -95,26 +89,26 @@ function Signup() {
   useEffect(() => {
     if (user && profile) {
       if (profile.role === 'admin' || profile.role === 'super_admin') {
-        navigate("/admin/dashboard");
-      } else if (profile.status === "active") {
-        navigate("/dashboard");
-      } else if (profile.status === "pending_approval") {
-        navigate("/user-lobby");
+        navigate('/admin/dashboard');
+      } else if (profile.status === 'active') {
+        navigate('/dashboard');
+      } else if (profile.status === 'pending_approval') {
+        navigate('/user-lobby');
       }
     }
   }, [user, profile, navigate]);
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     if (!email || !password || !confirmPassword || !fullName) {
-      setError("All fields are required.");
+      setError('All fields are required.');
       return;
     }
 
     if (!selectedCompany) {
-      setError("Please select your company.");
+      setError('Please select your company.');
       return;
     }
 
@@ -138,7 +132,7 @@ function Signup() {
         'user',
         selectedCompany.name,
         {
-          company_id: selectedCompany.id
+          company_id: selectedCompany.id,
         },
         window.location.origin + '/login'
       );
@@ -151,7 +145,6 @@ function Signup() {
           setSuccessMsg(`📧 Check your email! We sent a verification link to ${email}. After verifying your email, your request will be reviewed by your company admin.`);
         }
       }
-
     } catch (err) {
       let errMsg = err.message || "Signup failed. Please try again.";
       // Handle Supabase password validation errors
@@ -216,8 +209,8 @@ function Signup() {
         to="/"
         className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 transition-all group"
         style={{ color: '#374151', fontWeight: 500, fontSize: '14px' }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#16a34a'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
+        onMouseEnter={(e) => (e.currentTarget.style.color = '#16a34a')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = '#374151')}
       >
         <div className="p-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 group-hover:border-green-200 dark:group-hover:border-emerald-500/30 transition-all">
           <ArrowLeft className="w-4 h-4" />
@@ -225,8 +218,7 @@ function Signup() {
         <span className="hidden sm:inline">Back to Home</span>
       </Link>
 
-      <div className="w-full max-w-md relative z-10">
-
+      <div className='w-full max-w-md relative z-10'>
         {/* Logo Header */}
         <div className="flex justify-center mb-8">
           <Link to="/" className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#16a34a]/10 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
