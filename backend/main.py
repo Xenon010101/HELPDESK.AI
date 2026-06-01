@@ -890,7 +890,25 @@ body { background: var(--hd-bg); color: var(--hd-text); font-family: 'Inter', sy
 # Rate limiter — 10 AI requests per minute per IP (free tier protection)
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def _custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """Custom 429 handler that returns JSON with retry_after field."""
+    limit_str = str(exc.detail) if hasattr(exc, 'detail') else RATE_LIMIT_AI
+    retry_after = get_retry_after_seconds(limit_str)
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "rate_limit_exceeded",
+            "message": f"Too many requests. Please retry after {retry_after} seconds.",
+            "retry_after": retry_after,
+            "limit": limit_str,
+        },
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, _custom_rate_limit_handler)
 
 # ---------------------------------------------------------------------------
 # CORS — locked to production + local dev only
@@ -1224,11 +1242,11 @@ async def troubleshoot(request: TroubleshootRequest):
             options=["Continue to tracking"],
             is_final=True
         )
-    
+
     result = gemini_service.get_troubleshooting_step(
-        request.text,
-        request.history,
-        request.category
+        request_body.text,
+        request_body.history,
+        request_body.category
     )
     return TroubleshootResponse(**result)
 
@@ -1254,10 +1272,10 @@ async def analyze_bug(request: BugReportAnalysisRequest):
         )
     
     cause = gemini_service.analyze_bug_report(
-        request.bug_title,
-        request.description,
-        request.steps_to_reproduce,
-        request.console_errors
+        request_body.bug_title,
+        request_body.description,
+        request_body.steps_to_reproduce,
+        request_body.console_errors
     )
     return BugReportAnalysisResponse(probable_cause=cause)
 
