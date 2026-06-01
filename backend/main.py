@@ -558,7 +558,7 @@ async def get_tickets(
             supabase.table("profiles")
             .select("company_id")
             .eq("id", user_id)
-            .single()
+            .maybe_single()
             .execute()
         )
         profile_data = profile_res.data or {}
@@ -575,7 +575,8 @@ async def get_tickets(
     count_query = supabase.table("tickets").select("id", count="exact", head=True)
     count_query = count_query.eq("company_id", company_id)
     if search:
-        count_query = count_query.or_(f"subject.ilike.%{search}%,description.ilike.%{search}%")
+        safe_search = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace(",", "\\,").replace("(", "\\(").replace(")", "\\)")
+        count_query = count_query.or_(f"subject.ilike.%{safe_search}%,description.ilike.%{safe_search}%")
     count_res = count_query.execute()
     total = count_res.count if count_res.count is not None else 0
 
@@ -583,7 +584,7 @@ async def get_tickets(
     query = supabase.table("tickets").select("*").order("created_at", desc=True).range(offset, offset + page_size - 1)
     query = query.eq("company_id", company_id)
     if search:
-        query = query.or_(f"subject.ilike.%{search}%,description.ilike.%{search}%")
+        query = query.or_(f"subject.ilike.%{safe_search}%,description.ilike.%{safe_search}%")
 
     res = query.execute()
     return {
