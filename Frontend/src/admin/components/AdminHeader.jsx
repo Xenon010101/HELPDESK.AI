@@ -2,22 +2,41 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Settings, LogOut, UserCircle, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NotificationPopover from '../../user/components/NotificationPopover';
+import ThemeToggle from '../../components/shared/ThemeToggle';
 import useAuthStore from '../../store/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import TicketSearchBar from '../../components/shared/TicketSearchBar';
+
 /**
  * AdminHeader Component
  * Refined 64px header for the administrative console.
- * Features a solid white background, specific search placeholder,
+ * Features a solid white background, specific search placeholder, 
  * and a functional avatar dropdown menu.
  */
 const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef(null);
+    const searchRef = useRef(null);
     const navigate = useNavigate();
     const { logout, profile: adminProfile } = useAuthStore();
     const initials = adminProfile?.full_name ? adminProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AD';
 
+    const handleSearchKeyDown = (e) => {
+        if (e.key === 'Enter' && searchQuery.trim()) {
+            navigate(`/admin/tickets?q=${encodeURIComponent(searchQuery.trim())}`);
+            searchRef.current?.blur();
+        } else if (e.key === 'Escape') {
+            setSearchQuery('');
+            searchRef.current?.blur();
+        }
+    };
+
+    const handleSearchClear = () => {
+        setSearchQuery('');
+        searchRef.current?.focus();
+    };
+
+    // Handle clicks outside of dropdown to close it
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -40,12 +59,12 @@ const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar })
         )}
 
     return (
-        <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 px-6 md:px-10 flex items-center justify-between">
+        <header className="h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 px-6 md:px-10 flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
                 {/* Mobile Menu Toggle */}
                 <button
                     onClick={onMobileNavToggle}
-                    className="lg:hidden p-2 hover:bg-slate-50 rounded-xl text-slate-500 transition-colors"
+                    className="lg:hidden p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 transition-colors"
                 >
                     <Menu size={20} />
                 </button>
@@ -58,8 +77,26 @@ const AdminHeader = ({ onMobileNavToggle, isSidebarCollapsed, onToggleSidebar })
         </div>
 
                 {/* Primary Search Terminal */}
-                <div className="flex-1 max-w-xl hidden md:block">
-                    <TicketSearchBar />
+                <div className="flex-1 max-w-xl relative hidden md:block">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 pointer-events-none" />
+                    <input
+                        ref={searchRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        placeholder="Search tickets, users… (press Enter)"
+                        className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-11 pr-9 py-2 text-sm font-medium tracking-tight focus:outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-600 dark:text-slate-300 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={handleSearchClear}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                            tabIndex={-1}
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
                 </div>
             </div>
           </button>

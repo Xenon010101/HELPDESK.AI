@@ -108,10 +108,8 @@ function TitleUpdater() {
     else if (path.startsWith('/admin/tickets')) title = 'Admin Tickets';
     else if (path.startsWith('/admin/users')) title = 'Manage Users | Admin';
     else if (path.startsWith('/admin/analytics')) title = 'Analytics | Admin';
-    else if (path.startsWith('/admin/scorecard')) title = 'Agent Scorecard | Admin';
     else if (path.startsWith('/admin/profile')) title = 'Admin Profile';
     else if (path.startsWith('/admin/settings')) title = 'Settings | Admin';
-    else if (path.startsWith('/admin/sla')) title = 'SLA Monitor | Admin';
     // Master Admin Routes
     else if (path.startsWith('/master-admin/dashboard')) title = 'Master Dashboard';
     else if (path.startsWith('/master-admin/admin-requests'))
@@ -296,10 +294,9 @@ export default function App() {
       <BrowserRouter>
         <TitleUpdater />
         <ScrollToTop />
-        <ScrollToTopButton />
         <Toaster />
         <BugReportWidget />
-        <BackToTop />
+        <BackToTopButton />
         <Routes>
           <Route path='/' element={<DocsPortal />} />
           <Route path='/docs' element={<Navigate to='/' replace />} />

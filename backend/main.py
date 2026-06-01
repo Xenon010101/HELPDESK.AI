@@ -18,8 +18,6 @@ import re
 import tempfile
 from contextlib import asynccontextmanager
 
-logger = logging.getLogger(__name__)
-
 # Suppress harmless PyTorch CPU pin_memory warning
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
@@ -36,8 +34,6 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest, CollectorReg
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.encoders import jsonable_encoder
 import asyncio
-import aiofiles
-from filelock import FileLock
 from pathlib import Path
 from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
@@ -1374,7 +1370,6 @@ async def log_correction(raw_request: Request, user: dict = Depends(get_current_
 
     entry = {
         "ticket_id": ticket_id,
-        "user_id": user.get("id"),
         "original_text": original_text,
         "ocr_text": ocr_text,
         "original_prediction": original_prediction,
@@ -1385,10 +1380,6 @@ async def log_correction(raw_request: Request, user: dict = Depends(get_current_
         "company_id": profile.get("company_id"),
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
-
-    # Use file lock to prevent race conditions during read-modify-write
-    lock_path = str(CORRECTIONS_LOG_PATH) + ".lock"
-    lock = FileLock(lock_path, timeout=10)
 
     try:
         async with _corrections_lock:
