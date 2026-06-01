@@ -7,7 +7,12 @@ TOCTOU race conditions in save_to_disk() and list mutation in add_ticket().
 """
 
 import json
-import numpy as np
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except Exception:  # pragma: no cover
+    np = None  # type: ignore[assignment]
+    _HAS_NUMPY = False
 import os
 import threading
 from typing import Any
@@ -50,13 +55,13 @@ class DuplicateService:
         """Check if the model is available for duplicate detection."""
         return self._loaded and not self._load_failed
 
-    def _encode(self, text: str) -> np.ndarray:
+    def _encode(self, text: str):
         """Encode text to an L2-normalized float32 numpy embedding."""
         emb = self.model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
         return emb.astype(np.float32, copy=False)
 
     def _rebuild_matrix(self):
-        if self._tickets:
+        if self._tickets and _HAS_NUMPY:
             self._embedding_matrix = np.vstack([emb for _, emb, _ in self._tickets])
         else:
             self._embedding_matrix = None
