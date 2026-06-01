@@ -148,6 +148,8 @@ export const getTimeZoneAbbr = () => {
 };
 
 /**
+ * Format a date string with timezone abbreviation appended.
+ * Safari-safe.
  * Formats a date with its timezone abbreviation appended.
  * Falls back to 'Processing...' when dateStr is falsy or invalid.
  *
