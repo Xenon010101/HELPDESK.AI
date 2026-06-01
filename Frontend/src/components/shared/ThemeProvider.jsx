@@ -5,8 +5,13 @@ const ThemeContext = createContext(null);
 
 function getSavedTheme() {
     if (typeof window === 'undefined') return 'light';
-    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return savedTheme === 'dark' ? 'dark' : 'light';
+
+    try {
+        const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+        return savedTheme === 'dark' ? 'dark' : 'light';
+    } catch {
+        return 'light';
+    }
 }
 
 export function ThemeProvider({ children }) {
@@ -16,7 +21,12 @@ export function ThemeProvider({ children }) {
         const root = document.documentElement;
         root.classList.toggle('dark', theme === 'dark');
         root.style.colorScheme = theme;
-        window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+        try {
+            window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+        } catch {
+            // Ignore storage failures in restricted browsing contexts.
+        }
     }, [theme]);
 
     const value = useMemo(() => ({

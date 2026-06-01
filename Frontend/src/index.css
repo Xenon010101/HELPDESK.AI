@@ -154,8 +154,7 @@ body{
 .dark .bg-gray-100,
 .dark .bg-slate-100,
 .dark .bg-white\/50,
-.dark .bg-white\/80,
-.dark .bg-white\/90 {
+.dark .bg-white\/80 {
   background-color: #14261e !important;
 }
 

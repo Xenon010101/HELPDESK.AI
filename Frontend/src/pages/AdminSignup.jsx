@@ -67,6 +67,22 @@ function AdminSignup() {
         inputBorder: isDark ? 'rgba(52, 211, 153, 0.24)' : '#e5e7eb',
     };
 
+    const headingClass = "text-2xl font-bold text-gray-900 dark:text-white";
+    const descriptionClass = "text-gray-500 text-sm dark:text-slate-300";
+    const labelClass = "text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 dark:text-slate-300";
+    const inputClass = "w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-600 focus:bg-white outline-none transition-all dark:bg-[#081c14] dark:border-emerald-500/20 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-[#102219] dark:focus:border-emerald-400";
+    const passwordInputClass = `${inputClass} pr-11`;
+    const iconButtonClass = "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-emerald-300";
+    const dividerClass = "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-emerald-500/20";
+    const agreementPanelClass = "bg-gray-50 border border-gray-100 rounded-2xl p-6 space-y-4 dark:bg-[#081c14] dark:border-emerald-500/20";
+    const agreementTextClass = "text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors dark:text-slate-300 dark:group-hover:text-white";
+    const secondaryButtonStyle = {
+        background: theme.inputBg,
+        color: theme.body,
+        border: `1.5px solid ${theme.inputBorder}`,
+        cursor: 'pointer'
+    };
+
     // Redirect if already logged in and verified
     useEffect(() => {
         if (user && profile && profile.status === 'active') {
@@ -370,13 +386,13 @@ function AdminSignup() {
                                     className="space-y-6"
                                 >
                                     <div className="mb-8">
-                                        <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
-                                        <p className="text-gray-500 text-sm">Tell us who you are and create your admin account.</p>
+                                        <h2 className={headingClass}>Personal Information</h2>
+                                        <p className={descriptionClass}>Tell us who you are and create your admin account.</p>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <User className="w-3 h-3" /> Full Name
                                             </label>
                                             <input
@@ -386,11 +402,11 @@ function AdminSignup() {
                                                 placeholder="Alex Mercer"
                                                 value={formData.fullName}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all"
+                                                className={inputClass}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Mail className="w-3 h-3" /> Work Email
                                             </label>
                                             <input
@@ -400,11 +416,11 @@ function AdminSignup() {
                                                 placeholder="alex.mercer@acmecorp.com"
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all"
+                                                className={inputClass}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Phone className="w-3 h-3" /> Phone Number
                                             </label>
                                             <input
@@ -413,11 +429,11 @@ function AdminSignup() {
                                                 placeholder="+1 (415) 555-0198"
                                                 value={formData.phone}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all"
+                                                className={inputClass}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Briefcase className="w-3 h-3" /> Job Title
                                             </label>
                                             <input
@@ -426,14 +442,14 @@ function AdminSignup() {
                                                 placeholder="Director of Operations"
                                                 value={formData.jobTitle}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all"
+                                                className={inputClass}
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+                                    <div className={dividerClass}>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Lock className="w-3 h-3" /> Create Password
                                             </label>
                                             <div className="relative">
@@ -444,12 +460,12 @@ function AdminSignup() {
                                                     placeholder="••••••••••"
                                                     value={formData.password}
                                                     onChange={handleChange}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all pr-11"
+                                                    className={passwordInputClass}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className={iconButtonClass}
                                                 >
                                                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
@@ -457,13 +473,13 @@ function AdminSignup() {
                                             {/* Password Requirements */}
                                             <div className="mt-2 space-y-1">
                                                 {formData.password && (
-                                                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-400">
                                                         <span>Strength: {getStrengthText()}</span>
                                                         <span>{passwordStrength}%</span>
                                                     </div>
                                                 )}
                                                 {formData.password && (
-                                                    <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                    <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-emerald-950/60">
                                                         <motion.div
                                                             className={`h-full ${getStrengthColor()}`}
                                                             initial={{ width: 0 }}
@@ -479,7 +495,7 @@ function AdminSignup() {
                                                         { label: 'Number (0-9)', ok: /[0-9]/.test(formData.password) },
                                                     ].map(({ label, ok }) => (
                                                         <span key={label} className={`text-[10px] font-semibold flex items-center gap-1 transition-colors ${
-                                                            formData.password ? (ok ? 'text-emerald-600' : 'text-red-400') : 'text-gray-300'
+                                                            formData.password ? (ok ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-400') : 'text-gray-300 dark:text-slate-600'
                                                         }`}>
                                                             <span>{ok ? '✓' : '○'}</span> {label}
                                                         </span>
@@ -488,7 +504,7 @@ function AdminSignup() {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Lock className="w-3 h-3" /> Confirm Password
                                             </label>
                                             <div className="relative">
@@ -499,12 +515,12 @@ function AdminSignup() {
                                                     placeholder="••••••••••"
                                                     value={formData.confirmPassword}
                                                     onChange={handleChange}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white outline-none transition-all pr-11"
+                                                    className={passwordInputClass}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className={iconButtonClass}
                                                 >
                                                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
@@ -535,12 +551,12 @@ function AdminSignup() {
                                     className="space-y-6"
                                 >
                                     <div className="mb-8">
-                                        <h2 className="text-2xl font-bold text-gray-900">Company Details</h2>
-                                        <p className="text-gray-500 text-sm">Tell us about the organization you're registering.</p>
+                                        <h2 className={headingClass}>Company Details</h2>
+                                        <p className={descriptionClass}>Tell us about the organization you're registering.</p>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                        <label className={labelClass}>
                                             <Building2 className="w-3 h-3" /> Company Name
                                         </label>
                                         <input
@@ -550,13 +566,13 @@ function AdminSignup() {
                                             placeholder="Acme Global Inc."
                                             value={formData.companyName}
                                             onChange={handleChange}
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-50 outline-none transition-all"
+                                            className={`${inputClass} focus:ring-2 focus:ring-emerald-50 dark:focus:ring-emerald-500/10`}
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <User className="w-3 h-3" /> Company Size
                                             </label>
                                             <Select
@@ -574,7 +590,7 @@ function AdminSignup() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Briefcase className="w-3 h-3" /> Industry
                                             </label>
                                             <Select
@@ -597,7 +613,7 @@ function AdminSignup() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Globe className="w-3 h-3" /> Company Website
                                             </label>
                                             <input
@@ -606,11 +622,11 @@ function AdminSignup() {
                                                 placeholder="https://acme.com"
                                                 value={formData.website}
                                                 onChange={handleChange}
-                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-50 outline-none transition-all"
+                                                className={`${inputClass} focus:ring-2 focus:ring-emerald-50 dark:focus:ring-emerald-500/10`}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <label className={labelClass}>
                                                 <Globe className="w-3 h-3" /> Country
                                             </label>
                                             <input
@@ -620,7 +636,7 @@ function AdminSignup() {
                                                 placeholder="United States"
                                                 value={formData.country}
                                                 onChange={handleChange}
-                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-50 outline-none transition-all"
+                                                className={`${inputClass} focus:ring-2 focus:ring-emerald-50 dark:focus:ring-emerald-500/10`}
                                             />
                                         </div>
                                     </div>
@@ -628,9 +644,9 @@ function AdminSignup() {
                                          <div className="flex gap-4 pt-8">
                                          <button type="button" onClick={prevStep}
                                              className="flex-1 rounded-xl py-4 font-bold transition-all flex items-center justify-center gap-2"
-                                             style={{ background: '#f9fafb', color: '#374151', border: '1.5px solid #e5e7eb', cursor: 'pointer' }}
-                                             onMouseEnter={(e) => e.currentTarget.style.background='#f3f4f6'}
-                                             onMouseLeave={(e) => e.currentTarget.style.background='#f9fafb'}
+                                             style={secondaryButtonStyle}
+                                             onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(16, 185, 129, 0.12)' : '#f3f4f6'}
+                                             onMouseLeave={(e) => e.currentTarget.style.background = theme.inputBg}
                                          >
                                              <ChevronLeft className="w-5 h-5" /> Back
                                          </button>
@@ -656,11 +672,11 @@ function AdminSignup() {
                                     className="space-y-6"
                                 >
                                     <div className="mb-8">
-                                        <h2 className="text-2xl font-bold text-gray-900">Final Confirmation</h2>
-                                        <p className="text-gray-500 text-sm">Review our policies and submit your application.</p>
+                                        <h2 className={headingClass}>Final Confirmation</h2>
+                                        <p className={descriptionClass}>Review our policies and submit your application.</p>
                                     </div>
 
-                                    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 space-y-4">
+                                    <div className={agreementPanelClass}>
                                         <label className="flex items-start gap-4 cursor-pointer group">
                                             <input
                                                 type="checkbox"
@@ -669,11 +685,11 @@ function AdminSignup() {
                                                 onChange={handleChange}
                                                 className="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 transition-all"
                                             />
-                                            <span className="text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">
+                                            <span className={agreementTextClass}>
                                                 I agree to the <Link to="/terms" className="text-emerald-700 font-bold hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-emerald-700 font-bold hover:underline">Privacy Policy</Link>. I understand that my data will be stored securely.
                                             </span>
                                         </label>
-                                        <label className="flex items-start gap-4 cursor-pointer group pt-4 border-t border-gray-200/50">
+                                        <label className="flex items-start gap-4 cursor-pointer group pt-4 border-t border-gray-200/50 dark:border-emerald-500/20">
                                             <input
                                                 type="checkbox"
                                                 name="isAuthorized"
@@ -681,8 +697,8 @@ function AdminSignup() {
                                                 onChange={handleChange}
                                                 className="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 transition-all"
                                             />
-                                            <span className="text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">
-                                                I confirm that I am authorized to register <span className="font-bold text-gray-900 underline">{formData.companyName || "my company"}</span> on the HelpDesk.ai platform as a primary administrator.
+                                            <span className={agreementTextClass}>
+                                                I confirm that I am authorized to register <span className="font-bold text-gray-900 underline dark:text-white">{formData.companyName || "my company"}</span> on the HelpDesk.ai platform as a primary administrator.
                                             </span>
                                         </label>
                                     </div>
@@ -692,7 +708,8 @@ function AdminSignup() {
                                             type="button"
                                             onClick={prevStep}
                                             disabled={loading}
-                                            className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-4 font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 rounded-xl py-4 font-bold transition-all flex items-center justify-center gap-2"
+                                            style={secondaryButtonStyle}
                                         >
                                             <ChevronLeft className="w-5 h-5" /> Back
                                         </button>
