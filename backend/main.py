@@ -41,6 +41,8 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest, CollectorReg
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.encoders import jsonable_encoder
 import asyncio
+import redis
+
 from pathlib import Path
 from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
@@ -82,6 +84,17 @@ except (ImportError, Exception) as e:
     print(f"[WARNING] Supabase initialization failed: {e}")
     supabase = None
     Client = None
+
+# Initialize Redis Client
+redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+try:
+    redis_client = redis.from_url(redis_url, decode_responses=True)
+    redis_client.ping()
+    print("[Startup] Redis Cache connected successfully.")
+except Exception as e:
+    print(f"[WARNING] Redis initialization failed: {e}")
+    redis_client = None
+
 
 # Ensure project root is on path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -386,6 +399,17 @@ def get_system_settings(company_id: str) -> dict:
     }
     if not supabase or not company_id:
         return defaults
+
+    # Try fetching from Redis Cache
+    cache_key = f"system_settings:{company_id}"
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception as ce:
+            print(f"[WARNING] Redis read error for system_settings:{company_id}: {ce}")
+
     try:
         res = supabase.table("system_settings").select("*").eq(
             "company_id", company_id
