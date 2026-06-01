@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from "../../store/authStore";
 import useToastStore from "../../store/toastStore";
@@ -94,6 +94,7 @@ const AdminTickets = () => {
             if (categoryFilter !== 'All') countQuery = countQuery.eq('category', categoryFilter);
             if (priorityFilter !== 'All') countQuery = countQuery.eq('priority', priorityFilter.toLowerCase());
             if (teamFilter !== 'All') countQuery = countQuery.eq('assigned_team', teamFilter);
+            if (searchQuery) countQuery = countQuery.or(`subject.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
 
             const { count } = await countQuery;
             setTotalTickets(count || 0);
@@ -116,6 +117,7 @@ const AdminTickets = () => {
             if (categoryFilter !== 'All') query = query.eq('category', categoryFilter);
             if (priorityFilter !== 'All') query = query.eq('priority', priorityFilter.toLowerCase());
             if (teamFilter !== 'All') query = query.eq('assigned_team', teamFilter);
+            if (searchQuery) query = query.or(`subject.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
 
             let { data, error: sbError } = await query
                 .order('created_at', { ascending: false })
@@ -174,12 +176,17 @@ const AdminTickets = () => {
             supabase.removeChannel(channel);
         };
      
-    }, [statusFilter, categoryFilter, priorityFilter, teamFilter, currentPage]);
+    }, [statusFilter, categoryFilter, priorityFilter, teamFilter, currentPage, searchQuery]);
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [statusFilter, categoryFilter, priorityFilter, teamFilter]);
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     // Seed search from URL
     useEffect(() => {
@@ -215,17 +222,8 @@ const AdminTickets = () => {
     const statuses = ['All', 'Open', 'In Progress', 'Resolved', 'Closed'];
     const teams = ['All', 'Software Team', 'Hardware Support', 'Network Ops', 'Security Unit', 'General Support'];
 
-    const filteredTickets = useMemo(() => {
-        if (!searchQuery) return tickets;
-        const q = searchQuery.toLowerCase();
-        return tickets.filter(t =>
-            String(t.id).includes(q) ||
-            (t.subject || '').toLowerCase().includes(q) ||
-            (t.summary || '').toLowerCase().includes(q) ||
-            (t.description || '').toLowerCase().includes(q) ||
-            (t.profiles?.full_name || '').toLowerCase().includes(q)
-        );
-    }, [tickets, searchQuery]);
+    // Search is now server-side — no client-side filtering needed
+    const filteredTickets = tickets;
 
     const getPriorityStyle = (priority) => {
         const p = String(priority || '').toLowerCase();

@@ -537,7 +537,8 @@ async def log_correction(raw_request: Request):
 # ---------------------------------------------------------------------------
 @app.get("/tickets")
 async def get_tickets(
-    company_id: str | None = None,
+    request: Request,
+    search: str | None = Query(None, description="Search tickets by subject"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(50, ge=1, le=200, description="Items per page (max 200)"),
 ):
@@ -545,19 +546,44 @@ async def get_tickets(
     if not supabase:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
 
+    # Require authentication and derive tenant from user profile
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user session")
+
+    # Resolve company_id from user profile
+    try:
+        profile_res = (
+            supabase.table("profiles")
+            .select("company_id")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+        profile_data = profile_res.data or {}
+    except Exception as profile_error:
+        raise HTTPException(status_code=503, detail="Failed to resolve tenant") from profile_error
+
+    company_id = profile_data.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=403, detail="User has no tenant assignment")
+
     offset = (page - 1) * page_size
 
-    # Build count query (same filters)
-    count_query = supabase.table("tickets").select("id", count="exact")
-    if company_id:
-        count_query = count_query.eq("company_id", company_id)
+    # Build count query — head=True avoids fetching rows for counting
+    count_query = supabase.table("tickets").select("id", count="exact", head=True)
+    count_query = count_query.eq("company_id", company_id)
+    if search:
+        count_query = count_query.or_(f"subject.ilike.%{search}%,description.ilike.%{search}%")
     count_res = count_query.execute()
-    total = count_res.count if count_res.count is not None else len(count_res.data)
+    total = count_res.count if count_res.count is not None else 0
 
     # Build data query
     query = supabase.table("tickets").select("*").order("created_at", desc=True).range(offset, offset + page_size - 1)
-    if company_id:
-        query = query.eq("company_id", company_id)
+    query = query.eq("company_id", company_id)
+    if search:
+        query = query.or_(f"subject.ilike.%{search}%,description.ilike.%{search}%")
 
     res = query.execute()
     return {
