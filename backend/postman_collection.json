@@ -43,8 +43,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/",
-              "host": ["{{baseUrl}}"],
-              "path": [""]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
             },
             "description": "Renders the styled HTML landing page with links to /docs and /health."
           }
@@ -56,8 +60,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "Returns `{status, classifier_loaded, ner_loaded}`. Always 200 when the process is up."
           }
@@ -69,8 +77,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/ready",
-              "host": ["{{baseUrl}}"],
-              "path": ["ready"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ready"
+              ]
             },
             "description": "Returns 200 only when classifier, NER, duplicate index, RAG, and (optionally) Supabase are healthy. Otherwise 503 with a per-check map."
           }
@@ -86,7 +98,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -94,10 +109,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/analyze_ticket",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "analyze_ticket"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "analyze_ticket"
+              ]
             },
-            "description": "Runs the full cascade (OCR → classifier V3 → NER → duplicate check → RAG → Gemini summary). Throttled to 10 req/min per IP."
+            "description": "Runs the full cascade (OCR \u2192 classifier V3 \u2192 NER \u2192 duplicate check \u2192 RAG \u2192 Gemini summary). Throttled to 10 req/min per IP."
           }
         },
         {
@@ -105,7 +125,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -113,8 +136,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/analyze",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "analyze"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "analyze"
+              ]
             },
             "description": "Identical pipeline as /ai/analyze_ticket but never persists. Use for preview/UX flows before the user confirms ticket creation."
           }
@@ -124,8 +152,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "text/event-stream" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -133,8 +167,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/analyze_stream",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "analyze_stream"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "analyze_stream"
+              ]
             },
             "description": "Server-sent events. Emits one `data:` chunk per pipeline stage and a final `step:done` event carrying the full TicketResponse payload."
           }
@@ -144,7 +183,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -152,8 +194,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/analyze-v2",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "analyze-v2"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "analyze-v2"
+              ]
             },
             "description": "Runs only the V2 classifier and returns its prediction. Used for offline comparison with the V3 pipeline."
           }
@@ -163,7 +210,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -171,8 +221,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/troubleshoot",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "troubleshoot"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "troubleshoot"
+              ]
             },
             "description": "Returns the next troubleshooting step, suggested options, and an `is_final` flag. Append the user's answer to `history` and call again."
           }
@@ -182,7 +237,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -190,8 +248,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/analyze_bug",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "analyze_bug"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "analyze_bug"
+              ]
             },
             "description": "Returns a Gemini-generated `probable_cause` for the supplied bug report."
           }
@@ -209,8 +272,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/tickets?company_id={{companyId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets"
+              ],
               "query": [
                 {
                   "key": "company_id",
@@ -229,8 +296,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/tickets/{{ticketId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets", "{{ticketId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
             },
             "description": "Fetch a single Supabase ticket by id."
           }
@@ -240,7 +312,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -248,10 +323,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/tickets/save",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets", "save"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "save"
+              ]
             },
-            "description": "Persist a user-confirmed analysis. Enforces tenant linkage via the Supabase `profiles` table — 403 if `company_id` does not match the caller's profile."
+            "description": "Persist a user-confirmed analysis. Enforces tenant linkage via the Supabase `profiles` table \u2014 403 if `company_id` does not match the caller's profile."
           }
         },
         {
@@ -259,7 +339,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -267,8 +350,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/tickets",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets"
+              ]
             },
             "description": "Insert into the legacy in-memory store (used by tests and local dev)."
           }
@@ -278,7 +365,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -286,10 +376,188 @@
             },
             "url": {
               "raw": "{{baseUrl}}/tickets/{{ticketId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["tickets", "{{ticketId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
             },
             "description": "Partial update of an in-memory ticket. 404 when the id is unknown."
+          }
+        },
+        {
+          "name": "Search tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/search?q=VPN&company_id={{companyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "VPN",
+                  "description": "Search query string"
+                },
+                {
+                  "key": "company_id",
+                  "value": "{{companyId}}",
+                  "description": "Optional tenant filter"
+                }
+              ]
+            },
+            "description": "Full-text search across ticket subjects and descriptions."
+          }
+        },
+        {
+          "name": "SLA estimate for ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{ticketId}}/sla-estimate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}",
+                "sla-estimate"
+              ]
+            },
+            "description": "Returns the predicted SLA breach time."
+          }
+        },
+        {
+          "name": "Audit logs for ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{ticketId}}/audit_logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}",
+                "audit_logs"
+              ]
+            },
+            "description": "Audit trail of changes for a specific ticket."
+          }
+        }
+      ]
+    },
+    {
+      "name": "SLA",
+      "description": "Service Level Agreement monitoring and breach detection.",
+      "item": [
+        {
+          "name": "SLA stats overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sla/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sla",
+                "stats"
+              ]
+            },
+            "description": "Aggregated SLA statistics (breach rate, avg response time, etc.)."
+          }
+        },
+        {
+          "name": "SLA tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sla/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sla",
+                "tickets"
+              ]
+            },
+            "description": "List tickets with their SLA status."
+          }
+        },
+        {
+          "name": "SLA escalations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sla/escalations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sla",
+                "escalations"
+              ]
+            },
+            "description": "List active SLA escalations."
+          }
+        },
+        {
+          "name": "SLA policies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sla/policies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sla",
+                "policies"
+              ]
+            },
+            "description": "List configured SLA policies."
+          }
+        },
+        {
+          "name": "Check SLA breach",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticket_id\": \"{{ticketId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sla/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sla",
+                "check"
+              ]
+            },
+            "description": "Check if a specific ticket has breached SLA."
           }
         }
       ]
@@ -303,7 +571,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -311,10 +582,43 @@
             },
             "url": {
               "raw": "{{baseUrl}}/ai/log_correction",
-              "host": ["{{baseUrl}}"],
-              "path": ["ai", "log_correction"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "log_correction"
+              ]
             },
             "description": "Persist an admin override. Only diffs are logged; payloads where the corrected prediction equals the original are reported as `no_change`."
+          }
+        },
+        {
+          "name": "Send weekly digest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/digest/send-now",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "digest",
+                "send-now"
+              ]
+            },
+            "description": "Trigger an immediate weekly digest email."
           }
         }
       ]

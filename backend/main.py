@@ -41,7 +41,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # Import Swagger UI custom styling
-from backend.swagger_config import SWAGGER_UI_CUSTOM_CSS, SWAGGER_UI_CUSTOM_JS
+from backend.swagger_config import SWAGGER_UI_CUSTOM_CSS, SWAGGER_UI_DARK_CSS, SWAGGER_UI_CUSTOM_JS
 
 # Load environment variables from backend/.env
 env_path = Path(__file__).parent / '.env'
@@ -982,8 +982,10 @@ app.include_router(tag_router)
 # Custom Swagger UI with branding
 # ---------------------------------------------------------------------------
 @app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
+async def custom_swagger_ui_html(request: Request):
     """Serve custom Swagger UI with AI Helpdesk branding."""
+    theme = request.query_params.get("theme", "light")
+    dark_mode = theme == "dark"
     return HTMLResponse(
         content=f"""
     <!DOCTYPE html>
@@ -992,6 +994,7 @@ async def custom_swagger_ui_html():
         <title>AI Helpdesk API Documentation</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
         <style>{SWAGGER_UI_CUSTOM_CSS}</style>
+        <style id="swagger-dark-css">{SWAGGER_UI_DARK_CSS if dark_mode else ''}</style>
     </head>
     <body>
         <div id="swagger-ui"></div>
@@ -1008,10 +1011,11 @@ async def custom_swagger_ui_html():
                 defaultModelsExpandDepth: -1,
                 docExpansion: "none",
                 filter: true,
-                syntaxHighlight: {{ theme: "monokai" }}
+                syntaxHighlight: {{"theme": "monokai"}}
             }});
             window._swaggerUi = ui;
         </script>
+        <script id="swagger-dark-data" type="application/json">{json.dumps(SWAGGER_UI_DARK_CSS)}</script>
         <script>{SWAGGER_UI_CUSTOM_JS}</script>
     </body>
     </html>
