@@ -17,9 +17,66 @@ import { supabase } from '../../lib/supabaseClient';
  *   4. Only allow access once the server confirms admin/super_admin role.
  */
 const AdminProtectedRoute = () => {
-    const { user, profile, loading, isCheckingSession } = useAuthStore();
+    const { user, loading, isCheckingSession } = useAuthStore();
+    const [serverRole, setServerRole] = useState(null);
+    const [serverStatus, setServerStatus] = useState(null);
+    const [verifying, setVerifying] = useState(true);
+    const [error, setError] = useState(null);
 
-    if (loading || isCheckingSession) {
+    // Verify role from the database on every mount / user change
+    useEffect(() => {
+        if (!user) {
+            setVerifying(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        const verifyRole = async () => {
+            setVerifying(true);
+            setError(null);
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                const res = await fetch(`${BACKEND_URL}/auth/me/role`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { Accept: 'application/json' },
+                    signal: controller.signal,
+                });
+                clearTimeout(timeout);
+
+                if (cancelled) return;
+
+                if (!res.ok) {
+                    setServerRole(null);
+                    setServerStatus(null);
+                    setError('Unable to verify admin access');
+                    return;
+                }
+
+                const body = await res.json();
+                if (!cancelled) {
+                    setServerRole(body.role);
+                    setServerStatus(body.status);
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setServerRole(null);
+                    setServerStatus(null);
+                    setError('Unable to verify admin access');
+                }
+            } finally {
+                if (!cancelled) setVerifying(false);
+            }
+        };
+
+        verifyRole();
+        return () => { cancelled = true; };
+    }, [user]);
+
+    // Show spinner while checking session or verifying role
+    if (loading || isCheckingSession || verifying) {
         return (
             <div className="flex h-screen w-screen items-center justify-center bg-white">
                 <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" aria-label="Authenticating..." role="status"></div>
