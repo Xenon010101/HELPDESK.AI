@@ -535,6 +535,30 @@ async def log_correction(raw_request: Request):
 # ---------------------------------------------------------------------------
 # Ticket operations (Now via Supabase)
 # ---------------------------------------------------------------------------
+@app.get("/api/scorecard/company/{company_id}")
+async def get_company_scorecard_endpoint(company_id: str, days: int = 30):
+    """Get performance scorecards for all agents in a company."""
+    from backend.services.agent_scorecard import get_company_scorecard
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+    result = get_company_scorecard(company_id, supabase, gemini_service, days)
+    return {"agents": result}
+
+
+@app.get("/api/scorecard/agent/{agent_id}")
+async def get_agent_scorecard_endpoint(agent_id: str, company_id: str, days: int = 30):
+    """Get performance scorecard for a single agent."""
+    from backend.services.agent_scorecard import get_agent_metrics, compute_score, get_ai_coaching_tip
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+    metrics = get_agent_metrics(agent_id, company_id, supabase, days)
+    if not metrics or metrics.get("total_tickets", 0) == 0:
+        return {"error": "No ticket history found for this agent"}
+    score = compute_score(metrics)
+    coaching = get_ai_coaching_tip(metrics.get("agent_name", "Agent"), metrics, score, gemini_service)
+    return {"metrics": metrics, "score": score, "coaching": coaching}
+
+
 @app.get("/tickets")
 async def get_tickets(company_id: str | None = None):
     """Fetch persistent tickets from Supabase."""
