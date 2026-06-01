@@ -38,9 +38,33 @@ class AutoCloseService:
             os.getenv("SUPABASE_URL"),
             os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         )
+        # NOTE: self.enabled is the *global* env-var fallback.
+        # At runtime, is_enabled_for_company() reads fresh from DB per company.
         self.enabled = os.getenv("AUTO_CLOSE_ENABLED", "true").lower() == "true"
         self.default_auto_close_days = int(os.getenv("AUTO_CLOSE_DAYS", "7"))
         self.cron_schedule = os.getenv("AUTO_CLOSE_CRON_SCHEDULE", "0 2 * * *")  # 2 AM UTC daily
+
+    def is_enabled_for_company(self, company_id: str) -> bool:
+        """
+        Check whether auto-close is enabled for a specific company by querying DB.
+        Falls back to the global env-var when DB is unavailable.
+
+        Args:
+            company_id: UUID of the company.
+
+        Returns:
+            True if auto-close should run for this company.
+        """
+        try:
+            settings = self.get_system_settings(company_id)
+            # Prefer 'auto_close_enabled'; fall back to 'enable_auto_resolve' alias
+            db_enabled = settings.get("auto_close_enabled", settings.get("enable_auto_resolve"))
+            if db_enabled is not None:
+                return bool(db_enabled)
+        except Exception as e:
+            logger.warning(f"[AutoCloseService] is_enabled_for_company DB error: {e}")
+        # Final fallback: global env var
+        return self.enabled
 
     def get_system_settings(self, company_id: str) -> Dict:
         """
@@ -115,8 +139,9 @@ class AutoCloseService:
         Returns:
             Dict with statistics on processed/closed/error tickets
         """
+        # Global env-var check (quick short-circuit before DB queries)
         if not self.enabled:
-            logger.info("Auto-close service is disabled.")
+            logger.info("Auto-close service is globally disabled via AUTO_CLOSE_ENABLED=false.")
             return {"status": "disabled"}
 
         stats = {
@@ -151,7 +176,7 @@ class AutoCloseService:
                 try:
                     settings = self.get_system_settings(company_id)
 
-                    if not settings["auto_close_enabled"]:
+                    if not self.is_enabled_for_company(company_id):
                         logger.info(f"Auto-close disabled for company {company_id}, skipping {len(tickets)} tickets")
                         stats["skipped_count"] += len(tickets)
                         continue

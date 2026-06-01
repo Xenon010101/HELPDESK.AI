@@ -65,19 +65,33 @@ from backend.services.rag_service import RagService
 # Request / Response models
 # ---------------------------------------------------------------------------
 def get_system_settings(company_id: str) -> dict:
+    """
+    Fetch system settings for a company from the database.
+    Handles both 'enable_auto_resolve' and legacy 'auto_close_enabled' column names.
+    Falls back to safe defaults when the DB is unavailable.
+    """
     defaults = {
         "ai_confidence_threshold": 0.80,
         "duplicate_sensitivity": 0.85,
-        "enable_auto_resolve": False
+        "enable_auto_resolve": False,
+        "auto_close_days": 7,
+        "auto_close_enabled": False,
     }
     if not supabase or not company_id:
         return defaults
     try:
-        res = supabase.table("system_settings").select(
-            "ai_confidence_threshold, duplicate_sensitivity, enable_auto_resolve"
-        ).eq("company_id", company_id).single().execute()
+        res = supabase.table("system_settings").select("*").eq(
+            "company_id", company_id
+        ).single().execute()
         if res.data:
-            return {**defaults, **res.data}
+            row = res.data
+            merged = {**defaults, **row}
+            # Alias: 'auto_close_enabled' → 'enable_auto_resolve' so both names work
+            if "auto_close_enabled" in row and "enable_auto_resolve" not in row:
+                merged["enable_auto_resolve"] = bool(row["auto_close_enabled"])
+            elif "enable_auto_resolve" not in row and "auto_close_enabled" not in row:
+                merged["enable_auto_resolve"] = defaults["enable_auto_resolve"]
+            return merged
     except Exception as e:
         print(f"[WARNING] Could not fetch system_settings for company_id={company_id}: {e}")
     return defaults
@@ -1208,4 +1222,22 @@ async def auth_logout(response: Response):
 @app.get("/auth/me")
 async def auth_me(user: dict = Depends(get_current_user)):
     return {"user": user}
+
+
+# ---------------------------------------------------------------------------
+# Admin settings endpoints (Issue #913)
+# ---------------------------------------------------------------------------
+@app.get("/admin/settings/auto-resolve")
+async def get_auto_resolve_setting(company_id: str):
+    """
+    Return the current auto-resolve / auto-close enabled setting for a company.
+    Reads live from DB so it reflects the latest toggle state.
+    """
+    settings = get_system_settings(company_id)
+    return {
+        "company_id": company_id,
+        "enable_auto_resolve": settings.get("enable_auto_resolve", False),
+        "auto_close_enabled": settings.get("auto_close_enabled", False),
+        "auto_close_days": settings.get("auto_close_days", 7),
+    }
 
