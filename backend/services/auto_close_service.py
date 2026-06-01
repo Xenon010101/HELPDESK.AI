@@ -36,7 +36,13 @@ class AutoCloseService:
     """Background service for automatically closing resolved tickets."""
 
     def __init__(self):
-        """Initialize the auto-close service with Supabase client."""
+        """Initialize the auto-close service with Supabase client.
+        
+        Kelthos Fix: Removed global AUTO_CLOSE_ENABLED env check.
+        The admin toggle in the dashboard writes to system_settings.auto_close_enabled,
+        so the backend MUST read per-company DB settings — not a global env var.
+        The env var AUTO_CLOSE_ENABLED is now DEPRECATED in favor of DB-driven config.
+        """
         self.supabase = create_client(
             os.getenv("SUPABASE_URL"),
             os.getenv("SUPABASE_SERVICE_ROLE_KEY")
