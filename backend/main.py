@@ -44,6 +44,12 @@ from apscheduler.triggers.cron import CronTrigger
 # Import Swagger UI custom styling
 from backend.swagger_config import SWAGGER_UI_CUSTOM_CSS, SWAGGER_UI_DARK_CSS, SWAGGER_UI_CUSTOM_JS
 
+try:
+    import aiofiles
+except ImportError:
+    # Fallback if aiofiles isn't in their requirements yet
+    aiofiles = None
+
 # Load environment variables from backend/.env
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -453,7 +459,6 @@ class AgentCSATResponse(BaseModel):
     total_ratings: int
     ratings_distribution: dict
 
-
 class DuplicateInfo(BaseModel):
     is_duplicate: bool
     duplicate_ticket_id: str | None = None
@@ -512,7 +517,6 @@ class TicketResponse(BaseModel):
     spam_check: SpamCheck = SpamCheck()
     version: str = "2.1.0-Neural-Diagnostic"
 
-
 # --- Persistence Models ---
 class Message(BaseModel):
     sender: str
@@ -555,17 +559,14 @@ class SLAPredictRequest(BaseModel):
     similar_count: int = 0
     thresholds: dict | None = None
 
-
 class HealthResponse(BaseModel):
     status: str
     classifier_loaded: bool
     ner_loaded: bool
 
-
 class ReadinessResponse(BaseModel):
     status: str
     checks: dict[str, bool]
-
 
 # ---------------------------------------------------------------------------
 # Service singletons
@@ -781,7 +782,6 @@ async def lifespan(app: FastAPI):
     print("[Shutdown] Cleaning up ...")
     if hasattr(app.state, "scheduler"):
         app.state.scheduler.shutdown()
-
 
 # ---------------------------------------------------------------------------
 # App
