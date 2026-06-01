@@ -1223,10 +1223,6 @@ class TroubleshootRequest(BaseModel):
     category: str
     history: list[dict] = []
 
-class TroubleshootResponse(BaseModel):
-    step_text: str
-    options: list[str]
-    is_final: bool
 
 @app.post("/ai/troubleshoot", response_model=TroubleshootResponse)
 @limiter.limit("10/minute")
