@@ -178,7 +178,7 @@ class ClassifierService:
                 "Software": ["crash", "load", "website", "application", "error", "bug", "failing", "software", "SQL", "Cluster", "Database", "Production", "Latency"],
                 "Access": ["login", "password", "access", "authentication", "account", "permission", "MFA", "OAuth"]
             }
-            
+
             lower_text = text.lower()
             for cat, keywords in tech_keywords.items():
                 if any(k.lower() in lower_text for k in keywords):
@@ -187,7 +187,7 @@ class ClassifierService:
                         category = cat
                         assigned_team = TEAM_MAP.get(cat, "General Support")
                         # Boost confidence significantly for verified technical signals
-                        confidence = max(confidence, 0.92) 
+                        confidence = max(confidence, 0.92)
                         break
 
             if _METRICS_ENABLED:
