@@ -8,7 +8,9 @@ TOCTOU race conditions in save_to_disk() and list mutation in add_ticket().
 """
 
 import json
+import numpy as np
 import os
+import threading
 from typing import Any
 
 try:

@@ -22,7 +22,7 @@ from contextlib import asynccontextmanager
 warnings.filterwarnings("ignore", message="'pin_memory'")
 
 # HF Rebuild Trigger: 2026-03-08-2030
-from fastapi import FastAPI, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from slowapi.util import get_remote_address
@@ -888,45 +888,27 @@ async def add_security_headers(request, call_next):
     for key, value in get_security_headers().items():
         response.headers[key] = value
     return response
-
+# ---------------------------------------------------------------------------
 # CORS — locked to production + local dev only
-# CORS configuracion restrictiva para produccion
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "https://helpdesk.ai,https://staging.helpdesk.ai,http://localhost:5173,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
-
-# Security Headers Middleware
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
-    return response
-    allow_origins=[
-        "https://helpdeskaiv1.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ]
-
+# ---------------------------------------------------------------------------
+origins = [
+    "https://helpdeskaiv1.vercel.app",
+    "https://helpdesk.ai",
+    "https://staging.helpdesk.ai",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
 )
 
+# ---------------------------------------------------------------------------
 # Helmet Integration — custom middleware enforcing HTTP security headers
+# ---------------------------------------------------------------------------
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -944,6 +926,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
+
 
 app.include_router(auth_cookie_router)
 
@@ -1037,12 +1020,18 @@ instrumentator = Instrumentator(
 )
 
 # Add custom metrics
-instrumentator.add(metrics.latency(buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)))
-instrumentator.add(metrics.request_size(buckets=(100, 1000, 10000, 100000, 1000000)))
-instrumentator.add(metrics.response_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+try:
+    instrumentator.add(metrics.latency(buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)))
+    instrumentator.add(metrics.request_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+    instrumentator.add(metrics.response_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+except TypeError:
+    # Newer prometheus-fastapi-instrumentator versions don't support custom buckets
+    instrumentator.add(metrics.latency())
+    instrumentator.add(metrics.request_size())
+    instrumentator.add(metrics.response_size())
 
 # Instrument the app
-instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+instrumentator.instrument(app).expose(app, endpoint="/prometheus-metrics", include_in_schema=False)
 
 # Root & Health check
 # ---------------------------------------------------------------------------
@@ -2239,7 +2228,7 @@ async def analyze_only(request_body: TicketRequest, request: Request):
 
 @app.post("/ai/analyze_stream")
 @limiter.limit("10/minute")
-async def analyze_stream(request_body: TicketRequest):
+async def analyze_stream(request: Request, request_body: TicketRequest):
     """
     REAL-TIME SSE ENDPOINT: Streams the AI progress to the frontend dynamically.
     """
@@ -2727,31 +2716,3 @@ async def sla_ticket_detail(ticket_id: str, current_user: dict = Depends(get_cur
 
 
 
-@app.get("/metrics")
-async def metrics(request: Request):
-    """Prometheus scrape endpoint — exposes HTTP request, AI inference, and system metrics.
-
-    Secured via optional ``METRICS_TOKEN`` bearer token and IP allowlist
-    (``METRICS_ALLOWED_IPS`` env var, defaults to private ranges).
-    """
-    # --- IP allowlist check ---
-    client_ip = request.client.host if request.client else ""
-    if METRICS_ALLOWED_IPS:
-        import ipaddress
-        try:
-            client_addr = ipaddress.ip_address(client_ip)
-        except ValueError:
-            raise HTTPException(status_code=403, detail="Forbidden")
-        allowed = any(
-            client_addr in ipaddress.ip_network(cidr, strict=False)
-            for cidr in METRICS_ALLOWED_IPS
-        )
-        if not allowed:
-            # Fall back to token check if IP not in allowlist
-            auth = request.headers.get("authorization", "")
-            if METRICS_TOKEN and auth == f"Bearer {METRICS_TOKEN}":
-                pass  # Token grants access
-            else:
-                raise HTTPException(status_code=403, detail="Forbidden")
-
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
