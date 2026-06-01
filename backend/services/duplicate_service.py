@@ -1,4 +1,10 @@
 import json
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except Exception:  # pragma: no cover
+    np = None  # type: ignore[assignment]
+    _HAS_NUMPY = False
 import os
 import threading
 import tempfile
@@ -32,7 +38,7 @@ class DuplicateService:
             os.path.dirname(__file__), "..", "data", "case_history_cache.json"
         )
         # Pre-computed embedding matrix for vectorized search
-        self._embedding_matrix: torch.Tensor | None = None
+        self._embedding_matrix: Any | None = None
         self._ticket_ids: list[str] = []
         self._embedding_matrix_dirty: bool = True
         self.storage_file = os.path.join(os.path.dirname(__file__), "..", "data", "case_history_cache.json")
@@ -47,13 +53,13 @@ class DuplicateService:
     def is_available(self) -> bool:
         return self._loaded and not self._load_failed
 
-    def _encode(self, text: str) -> np.ndarray:
+    def _encode(self, text: str):
         """Encode text to an L2-normalized float32 numpy embedding."""
         emb = self.model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
         return emb.astype(np.float32, copy=False)
 
     def _rebuild_matrix(self):
-        if self._tickets:
+        if self._tickets and _HAS_NUMPY:
             self._embedding_matrix = np.vstack([emb for _, emb, _ in self._tickets])
         else:
             self._embedding_matrix = None
@@ -234,6 +240,12 @@ class DuplicateService:
         loop in ``check_duplicate``.
         """
         if not self._tickets:
+            self._embedding_matrix = None
+            self._ticket_ids = []
+            self._embedding_matrix_dirty = False
+            return
+
+        if not _HAS_TORCH:
             self._embedding_matrix = None
             self._ticket_ids = []
             self._embedding_matrix_dirty = False

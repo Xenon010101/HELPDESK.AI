@@ -154,8 +154,8 @@ class ClassifierService:
                 probs = F.softmax(logits, dim=1)
                 confidence, pred_idx = torch.max(probs, dim=1)
 
-            pred_idx = pred_idx.item()
-            confidence = round(confidence.item(), 4)
+                pred_idx = pred_idx.item()
+                confidence = round(confidence.item(), 4)
 
             # Decode the combined label "Category | SubCategory"
             combined_label = self.id2label.get(str(pred_idx), "Unknown | Unknown")

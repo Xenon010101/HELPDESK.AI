@@ -1050,6 +1050,7 @@ async def add_security_headers(request: Request, call_next):
     )
     return response
 
+
 app.include_router(auth_cookie_router)
 
 # ---------------------------------------------------------------------------
@@ -1150,12 +1151,18 @@ instrumentator = Instrumentator(
 )
 
 # Add custom metrics
-instrumentator.add(metrics.latency(buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)))
-instrumentator.add(metrics.request_size(buckets=(100, 1000, 10000, 100000, 1000000)))
-instrumentator.add(metrics.response_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+try:
+    instrumentator.add(metrics.latency(buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)))
+    instrumentator.add(metrics.request_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+    instrumentator.add(metrics.response_size(buckets=(100, 1000, 10000, 100000, 1000000)))
+except TypeError:
+    # Newer prometheus-fastapi-instrumentator versions don't support custom buckets
+    instrumentator.add(metrics.latency())
+    instrumentator.add(metrics.request_size())
+    instrumentator.add(metrics.response_size())
 
 # Instrument the app
-instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+instrumentator.instrument(app).expose(app, endpoint="/prometheus-metrics", include_in_schema=False)
 
 # Root & Health check
 # ---------------------------------------------------------------------------
@@ -2774,7 +2781,7 @@ async def analyze_only(request_body: TicketRequest, request: Request):
 
 @app.post("/ai/analyze_stream")
 @limiter.limit("10/minute")
-async def analyze_stream(request_body: TicketRequest):
+async def analyze_stream(request: Request, request_body: TicketRequest):
     """
     REAL-TIME SSE ENDPOINT: Streams the AI progress to the frontend dynamically.
     """
