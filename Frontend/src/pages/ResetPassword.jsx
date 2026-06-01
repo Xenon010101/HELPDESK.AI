@@ -44,6 +44,11 @@ function ResetPassword() {
 
             if (error) throw error;
 
+            // Sign out the recovery session to invalidate any cached tokens.
+            // This prevents the reset link from being reused after a successful
+            // password change.
+            await supabase.auth.signOut();
+
             setMessage("Password successfully updated!");
             setTimeout(() => navigate("/login"), 3000);
         } catch (err) {
