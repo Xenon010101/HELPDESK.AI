@@ -9,6 +9,7 @@ import { supabase } from "../../lib/supabaseClient";
 import useTicketsRealtime from "../../hooks/useTicketsRealtime";
 import TagFilter from "../../components/TagFilter";
 import TagChip from "../../components/TagChip";
+import { TicketTableSkeleton } from "../../components/Skeletons";
 import {
   Search,
   Filter,
@@ -479,13 +480,9 @@ const AdminTickets = () => {
 
             {/* 3. High-Density Data Terminal */}
             <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
-                        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-                    </div>
-                )}
+                {loading && <TicketTableSkeleton rows={8} />}
 
-                {error && (
+                {!loading && error && (
                     <div className="p-12 text-center text-red-500 space-y-4">
                         <AlertCircle className="mx-auto w-12 h-12" />
                         <p className="font-bold uppercase tracking-widest text-xs">{error}</p>
@@ -493,6 +490,8 @@ const AdminTickets = () => {
                     </div>
                 )}
 
+                {!loading && (
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
@@ -706,6 +705,8 @@ const AdminTickets = () => {
                         <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight">No Incidents Found</h3>
                         <p className="text-sm text-slate-500 font-medium max-w-xs mx-auto mt-2 italic">Refine your search parameters to view more data points.</p>
                     </div>
+                )}
+                </div>
                 )}
             </div>
         </div>
