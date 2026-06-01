@@ -33,12 +33,19 @@ class AutoCloseService:
     """Background service for automatically closing resolved tickets."""
 
     def __init__(self):
-        """Initialize the auto-close service with Supabase client."""
+        """Initialize the auto-close service with Supabase client.
+        
+        Kelthos Fix: Removed global AUTO_CLOSE_ENABLED env check.
+        The admin toggle in the dashboard writes to system_settings.auto_close_enabled,
+        so the backend MUST read per-company DB settings — not a global env var.
+        The env var AUTO_CLOSE_ENABLED is now DEPRECATED in favor of DB-driven config.
+        """
         self.supabase = create_client(
             os.getenv("SUPABASE_URL"),
             os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         )
-        self.enabled = os.getenv("AUTO_CLOSE_ENABLED", "true").lower() == "true"
+        # DEPRECATED: self.enabled was reading env var, ignoring the admin dashboard toggle
+        # Now each company's DB setting controls whether auto-close runs for them
         self.default_auto_close_days = int(os.getenv("AUTO_CLOSE_DAYS", "7"))
         self.cron_schedule = os.getenv("AUTO_CLOSE_CRON_SCHEDULE", "0 2 * * *")  # 2 AM UTC daily
 
@@ -66,10 +73,11 @@ class AutoCloseService:
         except Exception as e:
             logger.warning(f"Could not fetch settings for company {company_id}: {str(e)}. Using defaults.")
         
-        # Fall back to defaults
+        # Kelthos Fix: Fall back to DISABLED on DB failure for safety.
+        # If we can't read the company's settings, we must NOT auto-close tickets.
         return {
             "auto_close_days": self.default_auto_close_days,
-            "auto_close_enabled": True
+            "auto_close_enabled": False  # Safety: default to disabled when uncertain
         }
 
 # NOTE: Method renamed to `get_system_settings` to match schema; underlying DB table is `system_settings`.
@@ -105,20 +113,18 @@ class AutoCloseService:
         """
         Execute the auto-close job.
         
+        Kelthos Fix: Removed global self.enabled check.
+        Each company's system_settings.auto_close_enabled now controls behavior.
         Process:
         1. Fetch all resolved tickets
         2. Group by company_id
-        3. For each company, check auto-close settings
+        3. For each company, check DB auto-close settings
         4. Close tickets older than auto_close_days
         5. Log results and return statistics
         
         Returns:
             Dict with statistics on processed/closed/error tickets
         """
-        if not self.enabled:
-            logger.info("Auto-close service is disabled.")
-            return {"status": "disabled"}
-
         stats = {
             "processed_count": 0,
             "closed_count": 0,
