@@ -19,6 +19,7 @@ import TicketTimeline from "../../user/components/TicketTimeline";
 import TicketAuditTimeline from "../components/TicketAuditTimeline";
 import TicketTagManager from '../../components/TicketTagManager';
 import TagChip from '../../components/TagChip';
+import { TicketDetailSkeleton } from "../../components/Skeletons";
 
 const AdminTicketDetail = () => {
     const { ticket_id } = useParams();
@@ -177,12 +178,7 @@ const AdminTicketDetail = () => {
         }, 'resolve');
     };
 
-    if (isLoading) return (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
-            <p className="text-gray-400 font-black uppercase tracking-[0.2em] italic">Accessing Neural Records...</p>
-        </div>
-    );
+    if (isLoading) return <TicketDetailSkeleton />;
 
     if (error) return (
         <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">

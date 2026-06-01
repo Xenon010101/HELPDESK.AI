@@ -13,6 +13,7 @@ import StatCard from '../components/StatCard';
 import { Card, CardContent } from "../../components/ui/card";
 import useAuthStore from "../../store/authStore";
 import { formatTimelineDate } from "../../utils/dateUtils";
+import { AnalyticsSkeleton } from "../../components/Skeletons";
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#a855f7', '#ec4899'];
 
@@ -172,12 +173,7 @@ const AdminAnalytics = () => {
     }, [tickets]);
 
     // Removed tab state - moving to single dashboard layout
-    if (loading) return (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-            <p className="text-slate-400 font-black uppercase tracking-widest italic text-center">Analyzing ticket data...</p>
-        </div>
-    );
+    if (loading) return <AnalyticsSkeleton />;
 
     return (
         <div style={{ background: '#f8faf9', minHeight: '100vh', paddingBottom: '80px' }} className="space-y-10 -m-6 p-6 md:-m-10 md:p-10 animate-in fade-in duration-700">
