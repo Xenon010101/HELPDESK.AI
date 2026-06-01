@@ -6,6 +6,7 @@ GET  /health             →  service health check
 
 import os
 import sys
+import fcntl
 import uuid
 import json
 import re
@@ -897,6 +898,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
+)
 
 # Security Headers Middleware
 @app.middleware("http")
