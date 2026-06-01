@@ -3,67 +3,148 @@ Swagger UI Custom Styling for AI Helpdesk Backend
 
 This module provides custom CSS and JavaScript for Swagger UI to match
 the AI Helpdesk brand identity and improve developer experience.
+
+Features:
+- Corporate dark theme with high contrast
+- Responsive design for mobile/desktop
+- Environment switcher (local/staging/production)
+- Auto-collapse models section
+- Custom version badge
 """
 
 SWAGGER_UI_CUSTOM_CSS = """
 /* AI Helpdesk Swagger UI Custom Theme - Light */
 
-/* Header bar */
+/* ── Global Overrides ─────────────────────────────────────────── */
+.swagger-ui {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --border: #334155;
+    --radius: 8px;
+}
+
+.swagger-ui .wrapper {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Topbar ───────────────────────────────────────────────────── */
 .swagger-ui .topbar {
-    background-color: #1a1a2e;
-    border-bottom: 3px solid #4361ee;
+    background: var(--bg-secondary);
+    border-bottom: 3px solid var(--accent);
+    padding: 8px 16px;
 }
 
 .swagger-ui .topbar .download-url-wrapper .download-url-input {
-    border: 2px solid #4361ee;
-    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 8px 12px;
 }
 
-/* Title */
+.swagger-ui .topbar .download-url-wrapper .download-url-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.swagger-ui .topbar .download-url-wrapper .download-url-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.swagger-ui .topbar .download-url-wrapper .download-url-btn:hover {
+    background: var(--accent-hover);
+}
+
+/* ── Info Section ──────────────────────────────────────────────── */
+.swagger-ui .info {
+    margin: 24px 0;
+}
+
 .swagger-ui .info .title {
-    color: #1a1a2e;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-primary);
     font-size: 2em;
     font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
-.swagger-ui .info .description p {
-    color: #4a5568;
+.swagger-ui .info .description p,
+.swagger-ui .info .description {
+    color: var(--text-secondary);
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
-/* Section headers */
+.swagger-ui .info .link {
+    color: var(--accent);
+}
+
+.swagger-ui .info .link:hover {
+    color: var(--accent-hover);
+}
+
+/* ── Section Headers ───────────────────────────────────────────── */
 .swagger-ui .opblock-tag {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 16px;
     font-weight: 600;
-    color: #2d3748;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border);
     padding-bottom: 8px;
+    margin-top: 24px;
 }
 
 .swagger-ui .opblock-tag:hover {
-    color: #4361ee;
-    border-bottom-color: #4361ee;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
 }
 
-/* Operation blocks */
+.swagger-ui .opblock-tag-section {
+    background: var(--bg-secondary);
+}
+
+/* ── Operation Blocks ──────────────────────────────────────────── */
 .swagger-ui .opblock {
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
     margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: box-shadow 0.2s, border-color 0.2s;
 }
 
 .swagger-ui .opblock:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent);
 }
 
-/* GET operations */
+.swagger-ui .opblock .opblock-summary {
+    color: var(--text-primary);
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+    color: var(--text-secondary);
+}
+
+/* GET */
 .swagger-ui .opblock.opblock-get {
-    background: rgba(72, 187, 120, 0.04);
-    border-color: #48bb78;
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.3);
 }
 
 .swagger-ui .opblock.opblock-get .opblock-summary-method {
@@ -672,5 +753,37 @@ setTimeout(function() {
             toggle.click();
         }
     }
-}, 500);
+
+    // Auto-collapse models section after load
+    setTimeout(function() {
+        const models = document.querySelector('.swagger-ui section.models');
+        if (models) {
+            const toggle = models.querySelector('h4');
+            if (toggle) {
+                toggle.click();
+            }
+        }
+    }, 500);
+
+    // Add keyboard shortcut hint
+    const footer = document.querySelector('.swagger-ui .info .link');
+    if (footer) {
+        const hint = document.createElement('div');
+        hint.style.cssText = `
+            margin-top: 16px;
+            padding: 12px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        `;
+        hint.innerHTML = `
+            <strong style="color: #f1f5f9;">Keyboard Shortcuts:</strong><br>
+            <code style="background: #334155; padding: 2px 6px; border-radius: 4px;">Esc</code> — Close expanded operation<br>
+            <code style="background: #334155; padding: 2px 6px; border-radius: 4px;">Ctrl+↑/↓</code> — Navigate operations
+        `;
+        footer.parentNode.insertBefore(hint, footer.nextSibling);
+    }
+});
 """
