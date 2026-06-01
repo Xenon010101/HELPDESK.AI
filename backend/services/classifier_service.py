@@ -6,13 +6,31 @@ Priority and other fields are derived from the category mapping.
 
 import os
 import json
-import torch
-import torch.nn.functional as F
-from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+try:
+    import torch
+    import torch.nn.functional as F
+    from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+    _HAS_TORCH = True
+except Exception:  # pragma: no cover - optional CI/runtime dependency
+    torch = None
+    F = None
+    DistilBertTokenizerFast = None
+    DistilBertForSequenceClassification = None
+    _HAS_TORCH = False
 
 SAVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "classifier")
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda" if torch and torch.cuda.is_available() else "cpu") if _HAS_TORCH else None
 MAX_LEN = 128
+
+try:
+    from backend.services.metrics_service import (
+        CLASSIFIER_LATENCY,
+        CLASSIFIER_REQUESTS,
+        CLASSIFIER_TOKENS,
+    )
+    _METRICS_ENABLED = True
+except Exception:
+    _METRICS_ENABLED = False
 
 # Priority mapping based on sub-category severity
 PRIORITY_MAP = {
