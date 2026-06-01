@@ -116,6 +116,13 @@ class TestSaveTicket:
 
         # Should use authenticated user_id, not spoofed one
         # The actual save logic would use user.get("id") = "test-user-id-123"
+        assert response.status_code in (200, 201, 400, 422)
+        # Verify the insert was called with the authenticated user_id, not the spoofed one
+        if mock_supabase.table.return_value.insert.called:
+            insert_call_args = mock_supabase.table.return_value.insert.call_args
+            saved_data = insert_call_args[0][0] if insert_call_args[0] else insert_call_args[1]
+            assert saved_data.get("user_id") == "test-user-id-123", \
+                f"Expected authenticated user_id, got {saved_data.get('user_id')}"
 
 
 class TestGetTicketById:
@@ -149,6 +156,51 @@ class TestGetTicketById:
         response = client.get("/tickets/ticket-123", headers={"Authorization": "Bearer test-token"})
         assert response.status_code == 200
         assert response.json()["id"] == "ticket-123"
+
+
+class TestCreateTicketAuth:
+    """Tests for POST /tickets endpoint authentication."""
+
+    def test_create_ticket_requires_auth(self):
+        """Test that POST /tickets requires authentication."""
+        response = client.post("/tickets", json={
+            "subject": "Test",
+            "description": "Test",
+            "category": "general",
+            "company_id": "test-company-id"
+        })
+        assert response.status_code == 401
+
+    @patch("main.get_current_user", side_effect=mock_get_current_user)
+    @patch("main.supabase")
+    def test_create_ticket_with_auth(self, mock_supabase, mock_auth):
+        """Test that POST /tickets works with authentication."""
+        mock_supabase.table.return_value.insert.return_value.execute.return_value = MagicMock(data=[MOCK_TICKET])
+        response = client.post("/tickets", json={
+            "subject": "Test",
+            "description": "Test",
+            "category": "general",
+            "company_id": "test-company-id"
+        }, headers={"Authorization": "Bearer test-token"})
+        assert response.status_code in (200, 201)
+
+
+class TestUpdateTicketAuth:
+    """Tests for PATCH /tickets/{ticket_id} endpoint authentication."""
+
+    def test_update_ticket_requires_auth(self):
+        """Test that PATCH /tickets/{ticket_id} requires authentication."""
+        response = client.patch("/tickets/ticket-123", json={"status": "closed"})
+        assert response.status_code == 401
+
+    @patch("main.get_current_user", side_effect=mock_get_current_user)
+    @patch("main.supabase")
+    def test_update_ticket_with_auth(self, mock_supabase, mock_auth):
+        """Test that PATCH /tickets/{ticket_id} works with authentication."""
+        mock_supabase.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(data=[MOCK_TICKET])
+        response = client.patch("/tickets/ticket-123", json={"status": "closed"},
+                                headers={"Authorization": "Bearer test-token"})
+        assert response.status_code in (200, 204)
 
 
 if __name__ == "__main__":
