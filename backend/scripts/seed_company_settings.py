@@ -29,7 +29,6 @@ import argparse
 import logging
 from datetime import datetime, timezone
 
-from supabase import create_client
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -140,7 +139,9 @@ def seed_company_settings(dry_run: bool = False) -> dict:
         logger.info(f"Found {len(existing_companies)} existing system_settings")
 
         # Step 3: Determine which companies need settings created
-        companies_to_create = [c for c in unique_companies if c not in existing_companies]
+        companies_to_create = [
+            c for c in unique_companies if c not in existing_companies
+        ]
         logger.info(f"Need to create settings for {len(companies_to_create)} companies")
 
         if not companies_to_create:
@@ -214,7 +215,8 @@ def verify_seed(supabase=None) -> bool:
             logger.info("✓ Verification passed: All companies have settings!")
             return True
         else:
-            logger.warning(f"✗ Verification failed: {companies_count - settings_count} companies missing settings")
+            missing = companies_count - settings_count
+            logger.warning(f"✗ Verification failed: {missing} companies missing settings")
             return False
 
     except Exception as e:
@@ -248,3 +250,7 @@ if __name__ == "__main__":
     else:
         logger.error("Seed script completed with issues")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
