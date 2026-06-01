@@ -21,6 +21,10 @@ import {
     Loader2,
     Save,
     RotateCcw,
+    CheckSquare,
+    Square,
+    Trash2,
+    X,
 } from 'lucide-react';
 import { Select } from "../../components/ui/select";
 import { formatTicketId } from "../../utils/format";
@@ -37,7 +41,7 @@ const AdminTickets = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isUpdating, setIsUpdating] = useState(null); // ID of ticket being updated
+    const [isUpdating, setIsUpdating] = useState(null);
 
     // Filter States
     const [searchQuery, setSearchQuery] = useState('');
@@ -45,7 +49,11 @@ const AdminTickets = () => {
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
     const [teamFilter, setTeamFilter] = useState('All');
-    const [agents, setAgents] = useState([]); // All staff/admins in the company
+    const [agents, setAgents] = useState([]);
+    const [selectedTickets, setSelectedTickets] = useState([]);
+    const [bulkAction, setBulkAction] = useState('');
+    const [bulkValue, setBulkValue] = useState('');
+    const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
     const ticketMatchesFilters = useCallback((ticket) => {
         if (statusFilter !== 'All' && String(ticket.status || '').toLowerCase() !== statusFilter.toLowerCase()) return false;
@@ -72,8 +80,6 @@ const AdminTickets = () => {
         setLoading(true);
         try {
             const { profile } = useAuthStore.getState();
-            
-            // 1. Fetch Agents for this company
             if (profile?.company) {
                 const { data: agentData } = await supabase
                     .from('profiles')
@@ -82,8 +88,6 @@ const AdminTickets = () => {
                     .in('role', ['admin', 'super_admin', 'agent']);
                 setAgents(agentData || []);
             }
-
-            // 2. Fetch Tickets (Join with both Creator and Assignee)
             fetchTickets();
         } catch (err) {
             console.error("Initialization error:", err);
@@ -96,8 +100,6 @@ const AdminTickets = () => {
         setError(null);
         try {
             const { profile } = useAuthStore.getState();
-            
-            // Join with profiles for both user_id (creator) and assigned_agent_id (assignee)
             let query = supabase
                 .from('tickets')
                 .select(`
@@ -118,7 +120,6 @@ const AdminTickets = () => {
             let { data, error: sbError } = await query.order('created_at', { ascending: false });
 
             if (sbError) {
-                // Secondary check: If the FK alias fails, try a simpler select
                 console.warn("Retrying fetch without relationship aliases...");
                 const basicQuery = supabase.from('tickets').select('*, profiles(full_name, email)');
                 const { data: basicData, error: basicError } = await basicQuery.eq('company', profile?.company).order('created_at', { ascending: false });
@@ -137,7 +138,6 @@ const AdminTickets = () => {
         fetchInitialData();
     }, [statusFilter, categoryFilter, priorityFilter, teamFilter]);
 
-    // Seed search from URL
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const q = params.get('q');
@@ -153,9 +153,6 @@ const AdminTickets = () => {
                 .eq('id', id);
 
             if (upError) throw upError;
-
-            // Optimistic update already handled if real-time is fast, 
-            // but manual update ensures immediate feedback
             setTickets(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
             showToast("System synchronization successful.", "success");
         } catch (err) {
@@ -163,6 +160,46 @@ const AdminTickets = () => {
             showToast("Update failed: " + err.message, "error");
         } finally {
             setIsUpdating(null);
+        }
+    };
+
+    // --- Bulk Operations ---
+    const handleSelectAll = () => {
+        if (selectedTickets.length === filteredTickets.length) {
+            setSelectedTickets([]);
+        } else {
+            setSelectedTickets(filteredTickets.map(t => t.id));
+        }
+    };
+
+    const handleSelectTicket = (id) => {
+        setSelectedTickets(prev =>
+            prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkExecute = async () => {
+        if (!bulkAction || selectedTickets.length === 0) return;
+        try {
+            let updates = {};
+            if (bulkAction === 'close') updates = { status: 'closed' };
+            if (bulkAction === 'priority') updates = { priority: bulkValue };
+            if (bulkAction === 'assign') updates = { assigned_agent_id: bulkValue, status: 'in progress' };
+
+            for (const id of selectedTickets) {
+                await supabase.from('tickets').update(updates).eq('id', id);
+            }
+
+            setTickets(prev => prev.map(t =>
+                selectedTickets.includes(t.id) ? { ...t, ...updates } : t
+            ));
+            showToast(`${selectedTickets.length} tickets updated successfully.`, "success");
+            setSelectedTickets([]);
+            setBulkAction('');
+            setBulkValue('');
+            setShowBulkConfirm(false);
+        } catch (err) {
+            showToast("Bulk update failed: " + err.message, "error");
         }
     };
 
@@ -188,7 +225,7 @@ const AdminTickets = () => {
         if (p === 'high' || p === 'critical') return 'text-red-600 bg-red-50 border-red-100';
         if (p === 'medium') return 'text-amber-600 bg-amber-50 border-amber-100';
         if (p === 'low') return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-        return 'text-slate-500 bg-slate-50 border-slate-100'; // Default
+        return 'text-slate-500 bg-slate-50 border-slate-100';
     };
 
     const getConfidenceColor = (conf) => {
@@ -212,7 +249,6 @@ const AdminTickets = () => {
             {/* 2. Advanced Filtering Station */}
             <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {/* Search Field */}
                     <div className="relative group lg:col-span-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors w-5 h-5" />
                         <input
@@ -223,42 +259,82 @@ const AdminTickets = () => {
                             className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
                         />
                     </div>
-
-                    {/* Status Filter */}
-                    <Select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center"
-                        options={statuses.map(s => ({ value: s, label: s === 'All' ? 'All Statuses' : s }))}
-                    />
-
-                    {/* Category Filter */}
-                    <Select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center"
-                        options={categories.map(c => ({ value: c, label: c === 'All' ? 'All Categories' : c }))}
-                    />
-
-                    {/* Priority Filter */}
-                    <Select
-                        value={priorityFilter}
-                        onChange={(e) => setPriorityFilter(e.target.value)}
-                        buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center"
-                        options={priorities.map(p => ({ value: p, label: p === 'All' ? 'All Priorities' : p }))}
-                    />
-
-                    {/* Team Filter */}
-                    <Select
-                        value={teamFilter}
-                        onChange={(e) => setTeamFilter(e.target.value)}
-                        buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center"
-                        options={teams.map(t => ({ value: t, label: t === 'All' ? 'All Teams' : t }))}
-                    />
+                    <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center" options={statuses.map(s => ({ value: s, label: s === 'All' ? 'All Statuses' : s }))} />
+                    <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center" options={categories.map(c => ({ value: c, label: c === 'All' ? 'All Categories' : c }))} />
+                    <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center" options={priorities.map(p => ({ value: p, label: p === 'All' ? 'All Priorities' : p }))} />
+                    <Select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all text-left flex justify-between items-center" options={teams.map(t => ({ value: t, label: t === 'All' ? 'All Teams' : t }))} />
                 </div>
             </div>
 
-            {/* 3. High-Density Data Terminal */}
+            {/* 3. Bulk Action Toolbar — appears when tickets selected */}
+            {selectedTickets.length > 0 && (
+                <div className="bg-indigo-600 text-white px-6 py-4 rounded-2xl flex items-center justify-between gap-4 shadow-lg shadow-indigo-500/20 animate-in fade-in duration-200">
+                    <span className="text-sm font-black uppercase tracking-widest">
+                        {selectedTickets.length} ticket{selectedTickets.length > 1 ? 's' : ''} selected
+                    </span>
+                    <div className="flex items-center gap-3">
+                        {/* Bulk Action Select */}
+                        <select
+                            value={bulkAction}
+                            onChange={(e) => { setBulkAction(e.target.value); setBulkValue(''); }}
+                            className="bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl px-3 py-2 border border-indigo-400 outline-none cursor-pointer"
+                        >
+                            <option value="">Select Action</option>
+                            <option value="close">Close Tickets</option>
+                            <option value="priority">Change Priority</option>
+                            <option value="assign">Assign Agent</option>
+                        </select>
+
+                        {/* Bulk Value Select */}
+                        {bulkAction === 'priority' && (
+                            <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl px-3 py-2 border border-indigo-400 outline-none">
+                                <option value="">Pick Priority</option>
+                                {priorities.filter(p => p !== 'All').map(p => <option key={p} value={p.toLowerCase()}>{p}</option>)}
+                            </select>
+                        )}
+                        {bulkAction === 'assign' && (
+                            <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl px-3 py-2 border border-indigo-400 outline-none">
+                                <option value="">Pick Agent</option>
+                                {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                            </select>
+                        )}
+
+                        {/* Apply Button */}
+                        {bulkAction && (bulkAction === 'close' || bulkValue) && (
+                            <button onClick={() => setShowBulkConfirm(true)} className="bg-white text-indigo-600 text-xs font-black uppercase tracking-widest rounded-xl px-4 py-2 hover:bg-indigo-50 transition-colors">
+                                Apply
+                            </button>
+                        )}
+
+                        {/* Clear Selection */}
+                        <button onClick={() => { setSelectedTickets([]); setBulkAction(''); setBulkValue(''); }} className="p-2 hover:bg-indigo-500 rounded-xl transition-colors">
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 4. Bulk Confirm Modal */}
+            {showBulkConfirm && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+                        <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">Confirm Bulk Action</h3>
+                        <p className="text-sm text-slate-500 mt-2">
+                            You are about to <strong>{bulkAction}</strong> {selectedTickets.length} ticket(s). This cannot be undone.
+                        </p>
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={handleBulkExecute} className="flex-1 bg-indigo-600 text-white rounded-2xl py-3 text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-colors">
+                                Confirm
+                            </button>
+                            <button onClick={() => setShowBulkConfirm(false)} className="flex-1 bg-slate-100 text-slate-600 rounded-2xl py-3 text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 5. High-Density Data Terminal */}
             <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative min-h-[400px]">
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
@@ -278,6 +354,15 @@ const AdminTickets = () => {
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-slate-50/80 border-b border-slate-100">
+                                {/* Select All Checkbox */}
+                                <th className="px-4 py-5 text-center w-10">
+                                    <button onClick={handleSelectAll} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                                        {selectedTickets.length === filteredTickets.length && filteredTickets.length > 0
+                                            ? <CheckSquare size={16} className="text-indigo-600" />
+                                            : <Square size={16} />
+                                        }
+                                    </button>
+                                </th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                     <div className="flex items-center gap-2">
                                         ID
@@ -297,35 +382,38 @@ const AdminTickets = () => {
                         <tbody className="divide-y divide-slate-50">
                             {filteredTickets.map((ticket) => {
                                 const wasLiveChanged = String(lastChangedTicketId) === String(ticket.id);
+                                const isSelected = selectedTickets.includes(ticket.id);
 
                                 return (
-                                <tr key={ticket.id} className={`hover:bg-slate-50/50 transition-colors group ${wasLiveChanged ? 'bg-emerald-50/70 ring-1 ring-emerald-100' : ''} ${isUpdating === ticket.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <tr key={ticket.id} className={`hover:bg-slate-50/50 transition-colors group ${wasLiveChanged ? 'bg-emerald-50/70 ring-1 ring-emerald-100' : ''} ${isUpdating === ticket.id ? 'opacity-50 pointer-events-none' : ''} ${isSelected ? 'bg-indigo-50/50 ring-1 ring-indigo-100' : ''}`}>
+                                    {/* Row Checkbox */}
+                                    <td className="px-4 py-6 text-center">
+                                        <button onClick={() => handleSelectTicket(ticket.id)} className="text-slate-300 hover:text-indigo-600 transition-colors">
+                                            {isSelected
+                                                ? <CheckSquare size={16} className="text-indigo-600" />
+                                                : <Square size={16} />
+                                            }
+                                        </button>
+                                    </td>
+
                                     {/* Ticket ID */}
                                     <td className="px-6 py-6">
                                         <span className="font-mono text-xs font-black text-emerald-600">#{formatTicketId(ticket.id)}</span>
                                     </td>
 
-                                    {/* User (Joined with Profiles) */}
+                                    {/* User */}
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-3">
                                             {ticket.creator?.profile_picture || ticket.profiles?.profile_picture ? (
-                                                <img
-                                                    src={ticket.creator?.profile_picture || ticket.profiles?.profile_picture}
-                                                    alt={ticket.creator?.full_name || ticket.profiles?.full_name || 'User'}
-                                                    className="w-8 h-8 rounded-lg object-cover border border-slate-100 shadow-sm"
-                                                />
+                                                <img src={ticket.creator?.profile_picture || ticket.profiles?.profile_picture} alt={ticket.creator?.full_name || ticket.profiles?.full_name || 'User'} className="w-8 h-8 rounded-lg object-cover border border-slate-100 shadow-sm" />
                                             ) : (
                                                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs border border-emerald-100/50">
                                                     {(ticket.creator?.full_name || ticket.profiles?.full_name || 'System').charAt(0).toUpperCase()}
                                                 </div>
                                             )}
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-black text-slate-800 tracking-tight italic uppercase truncate max-w-[120px]">
-                                                    {ticket.creator?.full_name || ticket.profiles?.full_name || 'System'}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-slate-400 lowercase truncate max-w-[120px]">
-                                                    {ticket.creator?.email || ticket.profiles?.email || '—'}
-                                                </span>
+                                                <span className="text-xs font-black text-slate-800 tracking-tight italic uppercase truncate max-w-[120px]">{ticket.creator?.full_name || ticket.profiles?.full_name || 'System'}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 lowercase truncate max-w-[120px]">{ticket.creator?.email || ticket.profiles?.email || '—'}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -333,122 +421,74 @@ const AdminTickets = () => {
                                     {/* Subject */}
                                     <td className="px-6 py-6">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={ticket.summary || ticket.subject}>
-                                                {ticket.summary || ticket.subject}
-                                            </span>
+                                            <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={ticket.summary || ticket.subject}>{ticket.summary || ticket.subject}</span>
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                {ticket.category} 
+                                                {ticket.category}
                                                 <span className="text-[9px] font-medium text-slate-300">• {formatTimelineDate(ticket.created_at)}</span>
                                             </span>
                                             {ticket?.metadata?.translation?.translated && (
-                                                <span className="text-[10px] text-sky-700 mt-1">
-                                                    Translated from {ticket.metadata.translation.source_language_name || ticket.metadata.translation.source_language || 'Unknown'}
-                                                </span>
+                                                <span className="text-[10px] text-sky-700 mt-1">Translated from {ticket.metadata.translation.source_language_name || ticket.metadata.translation.source_language || 'Unknown'}</span>
                                             )}
                                         </div>
                                     </td>
 
-                                    {/* Priority (Editable) */}
+                                    {/* Priority */}
                                     <td className="px-6 py-6">
-                                        <select
-                                            value={String(ticket.priority || 'medium').toLowerCase()}
-                                            onChange={(e) => handleUpdateTicket(ticket.id, { priority: e.target.value })}
-                                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border outline-none cursor-pointer transition-all flex items-center justify-between ${getPriorityStyle(ticket.priority)}`}
-                                        >
-                                            {priorities.filter(p => p !== 'All').map(p => (
-                                                <option key={p} value={p.toLowerCase()}>{p}</option>
-                                            ))}
+                                        <select value={String(ticket.priority || 'medium').toLowerCase()} onChange={(e) => handleUpdateTicket(ticket.id, { priority: e.target.value })} className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border outline-none cursor-pointer transition-all flex items-center justify-between ${getPriorityStyle(ticket.priority)}`}>
+                                            {priorities.filter(p => p !== 'All').map(p => <option key={p} value={p.toLowerCase()}>{p}</option>)}
                                         </select>
                                     </td>
 
-                                    {/* AI Score (Confidence) */}
+                                    {/* AI Score */}
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[8px] font-black
-                                                ${ticket.confidence >= 0.8 ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 
-                                                  ticket.confidence >= 0.5 ? 'border-amber-500 text-amber-600 bg-amber-50' : 
-                                                  'border-red-500 text-red-600 bg-red-50'}`}>
+                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[8px] font-black ${ticket.confidence >= 0.8 ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : ticket.confidence >= 0.5 ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-red-500 text-red-600 bg-red-50'}`}>
                                                 {(ticket.confidence * 100).toFixed(0)}%
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[8px] font-black text-slate-400 uppercase">Confidence</span>
                                                 <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden mt-0.5">
-                                                    <div 
-                                                        className={`h-full ${getConfidenceColor(ticket.confidence || 0)}`} 
-                                                        style={{ width: `${(ticket.confidence || 0) * 100}%` }}
-                                                    />
+                                                    <div className={`h-full ${getConfidenceColor(ticket.confidence || 0)}`} style={{ width: `${(ticket.confidence || 0) * 100}%` }} />
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    {/* Assigned Team (Editable) */}
-                                    <td className="px-6 py-6 text-emerald-600 font-bold text-[10px]">
-                                        {ticket.assigned_team || 'General'}
-                                    </td>
+                                    {/* Agent */}
+                                    <td className="px-6 py-6 text-emerald-600 font-bold text-[10px]">{ticket.assigned_team || 'General'}</td>
 
-                                    {/* Agent Assignee (Editable) */}
+                                    {/* Assignee */}
                                     <td className="px-6 py-6">
                                         <div className="flex flex-col gap-1 min-w-[120px]">
                                             {ticket.assigned_agent_id ? (
-                                                <select
-                                                    value={ticket.assigned_agent_id}
-                                                    onChange={(e) => handleUpdateTicket(ticket.id, { 
-                                                        assigned_agent_id: e.target.value,
-                                                        status: 'in progress'
-                                                    })}
-                                                    className="bg-transparent text-[10px] font-black text-indigo-600 uppercase tracking-tight italic border-none focus:ring-0 cursor-pointer hover:underline"
-                                                >
-                                                    {agents.map(a => (
-                                                        <option key={a.id} value={a.id}>{a.full_name}</option>
-                                                    ))}
+                                                <select value={ticket.assigned_agent_id} onChange={(e) => handleUpdateTicket(ticket.id, { assigned_agent_id: e.target.value, status: 'in progress' })} className="bg-transparent text-[10px] font-black text-indigo-600 uppercase tracking-tight italic border-none focus:ring-0 cursor-pointer hover:underline">
+                                                    {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
                                                 </select>
                                             ) : (
-                                                <button
-                                                    onClick={() => handleUpdateTicket(ticket.id, { 
-                                                        assigned_agent_id: user.id,
-                                                        status: 'in progress'
-                                                    })}
-                                                    className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                                                >
+                                                <button onClick={() => handleUpdateTicket(ticket.id, { assigned_agent_id: user.id, status: 'in progress' })} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                                                     Claim
                                                 </button>
                                             )}
                                         </div>
                                     </td>
 
-                                    {/* Status (Editable) */}
+                                    {/* Status */}
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-1.5 h-1.5 rounded-full ${ticket.status?.toLowerCase() === 'resolved' || ticket.status?.toLowerCase() === 'closed' ? 'bg-emerald-400' : 'bg-amber-500 animate-pulse'}`}></div>
-                                            <Select
-                                                value={String(ticket.status || 'open').toLowerCase()}
-                                                onChange={(e) => handleUpdateTicket(ticket.id, { status: e.target.value })}
-                                                buttonClassName="bg-transparent text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none cursor-pointer flex justify-between items-center w-full"
-                                                options={statuses.filter(s => s !== 'All').map(s => ({ value: s.toLowerCase(), label: s }))}
-                                            />
+                                            <Select value={String(ticket.status || 'open').toLowerCase()} onChange={(e) => handleUpdateTicket(ticket.id, { status: e.target.value })} buttonClassName="bg-transparent text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none cursor-pointer flex justify-between items-center w-full" options={statuses.filter(s => s !== 'All').map(s => ({ value: s.toLowerCase(), label: s }))} />
                                         </div>
                                     </td>
 
                                     {/* SLA Badge */}
                                     <td className="px-6 py-6">
-                                        <SLABadge
-                                            priority={ticket.priority}
-                                            createdAt={ticket.created_at}
-                                            slaBreachAt={ticket.sla_breach_at}
-                                            slaStatus={ticket.sla_status}
-                                            status={ticket.status}
-                                        />
+                                        <SLABadge priority={ticket.priority} createdAt={ticket.created_at} slaBreachAt={ticket.sla_breach_at} slaStatus={ticket.sla_status} status={ticket.status} />
                                     </td>
 
-                                    {/* Action: Open Ticket */}
+                                    {/* Actions */}
                                     <td className="px-6 py-6 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={() => navigate(`/admin/ticket/${ticket.id}`)}
-                                                className="p-2 bg-slate-900 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 hover:shadow-emerald-500/20"
-                                                title="Open Detailed View"
-                                            >
+                                            <button onClick={() => navigate(`/admin/ticket/${ticket.id}`)} className="p-2 bg-slate-900 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 hover:shadow-emerald-500/20" title="Open Detailed View">
                                                 <ArrowUpRight size={14} />
                                             </button>
                                         </div>
