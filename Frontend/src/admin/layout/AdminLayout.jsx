@@ -63,6 +63,9 @@ const AdminLayout = () => {
                 onClose={() => setShortcutsModalOpen(false)}
             />
 
+            {/* Keyboard Shortcuts Legend Modal */}
+            <KeyboardLegend isOpen={showLegend} onClose={closeLegend} />
+
             {/* Mobile Nav Overlay (Emergency protocols) */}
             {isMobileNavOpen && (
                 <div
