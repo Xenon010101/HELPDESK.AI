@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Trophy
+    Clock
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
@@ -23,6 +24,7 @@ const AdminSidebar = ({ isMobile, onClose, isCollapsed, onToggleCollapse }) => {
         { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
         { label: 'Scorecard', path: '/admin/scorecard', icon: Trophy },
         { label: 'Profile', path: '/admin/profile', icon: UserCircle },
+        { label: 'SLA Monitor', path: '/admin/sla', icon: Clock },
     ];
 
     const { logout } = useAuthStore();
