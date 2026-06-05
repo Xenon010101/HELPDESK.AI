@@ -13,6 +13,8 @@ import traceback
 import warnings
 import logging
 import hashlib
+
+logger = logging.getLogger(__name__)
 from contextlib import asynccontextmanager
 
 # Suppress harmless PyTorch CPU pin_memory warning
@@ -649,7 +651,7 @@ async def save_ticket(request_body: TicketSaveRequest):
 
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create ticket. Please try again later.")
 
 @app.get("/tickets/{ticket_id}")
 async def get_ticket_by_id(ticket_id: str):
@@ -1066,7 +1068,8 @@ async def analyze_ticket_v2(request: TicketRequest):
             "confidence": prediction["category"]["confidence"]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Analysis failed", exc_info=e)
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again later.")
 
 # ---------------------------------------------------------------------------
 # Clean cookie-based Supabase Auth endpoints for /auth/me backward-compatibility
@@ -1126,9 +1129,10 @@ async def get_current_user(request: Request) -> dict:
     try:
         result = supabase.auth.get_user(token)
     except Exception as exc:
+        logger.error("Session validation failed", exc_info=exc)
         raise HTTPException(
             status_code=401,
-            detail=f"Invalid session: {exc}",
+            detail="Invalid session",
         ) from exc
     user = getattr(result, "user", None) or (result.get("user") if isinstance(result, dict) else None)
     if not user:
@@ -1159,7 +1163,8 @@ async def auth_login(body: LoginBody, response: Response):
             {"email": body.email, "password": body.password}
         )
     except Exception as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        logger.error("Login failed", exc_info=exc)
+        raise HTTPException(status_code=401, detail="Invalid credentials") from exc
 
     session = getattr(result, "session", None)
     user = getattr(result, "user", None)
@@ -1191,7 +1196,8 @@ async def auth_signup(body: SignupBody, response: Response):
             }
         )
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        logger.error("Signup failed", exc_info=exc)
+        raise HTTPException(status_code=400, detail="Signup failed. Please try again later.") from exc
 
     session = getattr(result, "session", None)
     user = getattr(result, "user", None)
